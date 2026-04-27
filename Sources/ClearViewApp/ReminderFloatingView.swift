@@ -2,18 +2,27 @@ import SwiftUI
 
 struct ReminderFloatingView: View {
     @EnvironmentObject private var appState: AppState
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var isDark: Bool { colorScheme == .dark }
+    private var textPrimary: Color { isDark ? Color.white.opacity(0.92) : Color(red: 0.04, green: 0.20, blue: 0.12) }
+    private var textSecondary: Color { isDark ? Color.white.opacity(0.70) : Color(red: 0.27, green: 0.39, blue: 0.32).opacity(0.82) }
+    private var panelFill: Color { isDark ? Color.black.opacity(0.62) : Color.white.opacity(0.78) }
+    private var panelBorder: Color { isDark ? Color.white.opacity(0.20) : Color(red: 0.72, green: 0.80, blue: 0.74).opacity(0.38) }
+    private var buttonFill: Color { isDark ? Color.white.opacity(0.14) : Color.white.opacity(0.62) }
+    private var buttonBorder: Color { isDark ? Color.white.opacity(0.20) : Color(red: 0.72, green: 0.80, blue: 0.74).opacity(0.42) }
 
     var body: some View {
         VStack(spacing: 10) {
             Text(titleText)
                 .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(Color.white.opacity(0.92))
+                .foregroundStyle(textPrimary)
 
             Text("\(appState.breakSecondsLeft)")
                 .font(.system(size: 52, weight: .bold, design: .rounded))
                 .monospacedDigit()
-                .foregroundStyle(Color.white.opacity(0.96))
-                .shadow(color: .black.opacity(0.18), radius: 6, x: 0, y: 3)
+                .foregroundStyle(textPrimary)
+                .shadow(color: isDark ? Color.black.opacity(0.18) : Color.white.opacity(0.36), radius: 6, x: 0, y: 3)
 
             HStack(spacing: 16) {
                 if appState.reminderPhase != .completed {
@@ -30,7 +39,7 @@ struct ReminderFloatingView: View {
 
             Text(messageText)
                 .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(Color.white.opacity(0.70))
+                .foregroundStyle(textSecondary)
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 16)
@@ -38,12 +47,12 @@ struct ReminderFloatingView: View {
         // 关键流程：提示窗背景使用明确的半透明色，不叠加 material，避免系统毛玻璃让透明度看起来失效。
         .background(
             RoundedRectangle(cornerRadius: 24)
-                .fill(Color.black.opacity(0.62))
+                .fill(panelFill)
         )
         .clipShape(RoundedRectangle(cornerRadius: 24))
         .overlay(
             RoundedRectangle(cornerRadius: 24)
-                .stroke(Color.white.opacity(0.20), lineWidth: 1)
+                .stroke(panelBorder, lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.20), radius: 20, x: 0, y: 12)
     }
@@ -79,9 +88,9 @@ struct ReminderFloatingView: View {
             Image(systemName: systemName)
                 .font(.system(size: 18, weight: .semibold))
                 .frame(width: 40, height: 40)
-                .foregroundStyle(Color.white.opacity(isDisabled ? 0.35 : 0.92))
-                .background(.ultraThinMaterial)
-                .background(Color.white.opacity(isDisabled ? 0.06 : 0.14))
+                .foregroundStyle(textPrimary.opacity(isDisabled ? 0.35 : 0.92))
+                .background(isDark ? AnyShapeStyle(.ultraThinMaterial) : AnyShapeStyle(Color.clear))
+                .background(isDisabled ? buttonFill.opacity(0.42) : buttonFill)
                 .clipShape(Circle())
         }
         .buttonStyle(.plain)
@@ -89,7 +98,7 @@ struct ReminderFloatingView: View {
         .focusable(false)
         .overlay(
             Circle()
-                .stroke(Color.white.opacity(isDisabled ? 0.08 : 0.20), lineWidth: 1)
+                .stroke(isDisabled ? buttonBorder.opacity(0.38) : buttonBorder, lineWidth: 1)
         )
         .shadow(color: .black.opacity(isDisabled ? 0.02 : 0.08), radius: 6, x: 0, y: 3)
         .help(helpText(for: systemName))

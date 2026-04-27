@@ -23,27 +23,27 @@ struct ContentView: View {
 
     // 关键流程：根据系统深浅色自动切换背景、文字、按钮层级。
     private var isDark: Bool { colorScheme == .dark }
-    private var textPrimary: Color { isDark ? Color.white.opacity(0.97) : Color(red: 0.06, green: 0.24, blue: 0.14) }
-    private var textSecondary: Color { isDark ? Color.white.opacity(0.86) : Color(red: 0.14, green: 0.34, blue: 0.22) }
-    private var selectedFill: Color { isDark ? Color.white.opacity(0.24) : Color.white.opacity(0.58) }
-    private var panelTint: Color { isDark ? Color.white.opacity(0.08) : Color.white.opacity(0.34) }
-    private var buttonTint: Color { isDark ? Color.white.opacity(0.22) : Color.white.opacity(0.48) }
-    private var buttonBorder: Color { isDark ? Color.white.opacity(0.22) : Color.white.opacity(0.44) }
-    private var textShadow: Color { isDark ? Color.black.opacity(0.50) : Color.white.opacity(0.42) }
+    private var textPrimary: Color { isDark ? Color.white.opacity(0.97) : Color(red: 0.04, green: 0.20, blue: 0.12) }
+    private var textSecondary: Color { isDark ? Color.white.opacity(0.86) : Color(red: 0.27, green: 0.39, blue: 0.32) }
+    private var selectedFill: Color { isDark ? Color.white.opacity(0.24) : Color(red: 0.86, green: 0.92, blue: 0.87).opacity(0.96) }
+    private var panelTint: Color { isDark ? Color.white.opacity(0.08) : Color.white.opacity(0.72) }
+    private var buttonTint: Color { isDark ? Color.white.opacity(0.22) : Color.white.opacity(0.62) }
+    private var buttonBorder: Color { isDark ? Color.white.opacity(0.22) : Color(red: 0.72, green: 0.80, blue: 0.74).opacity(0.46) }
+    private var textShadow: Color { isDark ? Color.black.opacity(0.50) : Color.white.opacity(0.30) }
 
     var body: some View {
         ZStack {
             // 关键流程：菜单窗口外壳不可控，根视图不再额外做圆角外框，避免多重边框。
-            (isDark ? Color.black.opacity(0.35) : Color(red: 0.80, green: 0.88, blue: 0.83).opacity(0.38))
+            (isDark ? Color.black.opacity(0.35) : Color(red: 0.93, green: 0.96, blue: 0.94).opacity(0.92))
 
             Circle()
-                .fill((isDark ? Color.white.opacity(0.03) : Color.white.opacity(0.12)))
+                .fill((isDark ? Color.white.opacity(0.03) : Color.white.opacity(0.06)))
                 .frame(width: 280, height: 280)
                 .blur(radius: 46)
                 .offset(x: -170, y: -88)
 
             Circle()
-                .fill((isDark ? Color.white.opacity(0.02) : Color(red: 0.50, green: 0.72, blue: 0.60).opacity(0.10)))
+                .fill((isDark ? Color.white.opacity(0.02) : Color(red: 0.75, green: 0.86, blue: 0.78).opacity(0.08)))
                 .frame(width: 240, height: 240)
                 .blur(radius: 54)
                 .offset(x: 180, y: 116)
@@ -78,11 +78,11 @@ struct ContentView: View {
             tabButton(title: "护眼", page: .filter)
         }
         .padding(6)
-        .background(.ultraThinMaterial)
+        .background(isDark ? AnyShapeStyle(.ultraThinMaterial) : AnyShapeStyle(Color.clear))
         .background(isDark ? Color.white.opacity(0.05) : panelTint)
         .overlay(
             Capsule()
-                .stroke(isDark ? Color.white.opacity(0.13) : Color.white.opacity(0.45), lineWidth: 1)
+                .stroke(isDark ? Color.white.opacity(0.13) : Color(red: 0.72, green: 0.80, blue: 0.74).opacity(0.36), lineWidth: 1)
         )
         .clipShape(Capsule())
         .shadow(color: .black.opacity(isDark ? 0.34 : 0.10), radius: 14, x: 0, y: 7)
