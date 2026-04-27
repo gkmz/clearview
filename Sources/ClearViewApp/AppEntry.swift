@@ -171,6 +171,7 @@ final class AppState: ObservableObject {
         reminderPhase = .gentle
         breakSecondsLeft = breakDurationSeconds
         statusText = "请开始休息"
+        NSApplication.shared.activate(ignoringOtherApps: true)
         reminderPanel?.show()
         startBreakCountdown()
 
@@ -241,15 +242,15 @@ final class ReminderPanelController {
         if panel == nil {
             let root = ReminderFloatingView()
                 .environmentObject(appState)
-                .frame(width: 420, height: 180)
+                .frame(width: 420, height: 210)
 
             let hostingView = NSHostingView(rootView: root)
             hostingView.wantsLayer = true
             hostingView.layer?.backgroundColor = NSColor.clear.cgColor
 
-            let newPanel = NSPanel(
-                contentRect: NSRect(x: 0, y: 0, width: 420, height: 180),
-                styleMask: [.borderless],
+            let newPanel = ReminderPanel(
+                contentRect: NSRect(x: 0, y: 0, width: 420, height: 210),
+                styleMask: [.borderless, .nonactivatingPanel],
                 backing: .buffered,
                 defer: false
             )
@@ -257,15 +258,19 @@ final class ReminderPanelController {
             newPanel.isOpaque = false
             newPanel.backgroundColor = .clear
             newPanel.hasShadow = true
-            newPanel.level = .floating
+            newPanel.level = .statusBar
+            newPanel.hidesOnDeactivate = false
+            newPanel.ignoresMouseEvents = false
+            // 关键流程：提醒浮窗需要跨桌面显示；canJoinAllSpaces 与 moveToActiveSpace 互斥，不能同时设置。
             newPanel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
             newPanel.isReleasedWhenClosed = false
             panel = newPanel
         }
 
         positionAtTopCenter()
-        // 关键流程：NSPanel 不需要成为 key window，直接前置显示可避免 canBecomeKeyWindow 警告。
+        // 关键流程：用较高层级的独立面板前置，避免被 MenuBarExtra 菜单窗口吞掉。
         panel?.orderFrontRegardless()
+        panel?.makeKey()
     }
 
     func hide() {
@@ -274,11 +279,20 @@ final class ReminderPanelController {
 
     private func positionAtTopCenter() {
         guard let panel else { return }
-        let screen = NSScreen.main?.visibleFrame ?? .zero
+        let mouseLocation = NSEvent.mouseLocation
+        let screen = NSScreen.screens.first { NSMouseInRect(mouseLocation, $0.frame, false) }
+            ?? NSScreen.main
+            ?? NSScreen.screens.first
+        guard let visibleFrame = screen?.visibleFrame else { return }
         let width: CGFloat = 420
-        let height: CGFloat = 180
-        let x = screen.midX - width / 2
-        let y = screen.maxY - height - 24
+        let height: CGFloat = 210
+        let x = visibleFrame.midX - width / 2
+        let y = visibleFrame.maxY - height - 32
         panel.setFrame(NSRect(x: x, y: y, width: width, height: height), display: true)
     }
+}
+
+final class ReminderPanel: NSPanel {
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { true }
 }

@@ -2,24 +2,20 @@ import SwiftUI
 
 struct ReminderFloatingView: View {
     @EnvironmentObject private var appState: AppState
-
+// d
     var body: some View {
-        VStack(spacing: 14) {
-            Text(appState.breakSecondsLeft == 0 ? "休息完成" : "请休息")
+        VStack(spacing: 10) {
+            Text(appState.breakSecondsLeft == 0 ? "很好，眼睛已经得到了放松" : "让眼睛看向远方，放松一下吧")
                 .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(Color.white.opacity(0.90))
+                .foregroundStyle(Color.white.opacity(0.92))
 
             Text("\(appState.breakSecondsLeft)")
-                .font(.system(size: 64, weight: .bold, design: .rounded))
+                .font(.system(size: 52, weight: .bold, design: .rounded))
                 .monospacedDigit()
                 .foregroundStyle(Color.white.opacity(0.96))
-                .shadow(color: .black.opacity(0.16), radius: 6, x: 0, y: 3)
+                .shadow(color: .black.opacity(0.18), radius: 6, x: 0, y: 3)
 
-            HStack(spacing: 14) {
-                floatingIconButton(systemName: "xmark") {
-                    appState.skipBreak()
-                }
-
+            HStack(spacing: 16) {
                 floatingIconButton(systemName: "clock.arrow.circlepath") {
                     appState.snoozeBreak(minutes: 5)
                 }
@@ -28,23 +24,21 @@ struct ReminderFloatingView: View {
                     appState.completeBreak()
                 }
             }
+
+            Text(appState.breakSecondsLeft == 0 ? "可以回到工作中来了，记得保持节奏哦。" : "休息一下，眺望远方，给眼睛一点缓冲吧")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(Color.white.opacity(0.70))
         }
         .padding(.horizontal, 24)
-        .padding(.vertical, 18)
+        .padding(.vertical, 16)
+        .frame(width: 420, height: 210)
         .background(.ultraThinMaterial)
-        .background(Color.white.opacity(0.14))
-        .clipShape(RoundedRectangle(cornerRadius: 28))
+        .background(Color.black.opacity(0.8))
+        .clipShape(RoundedRectangle(cornerRadius: 24))
         .overlay(
-            RoundedRectangle(cornerRadius: 28)
-                .stroke(Color.white.opacity(0.55), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 24)
+                .stroke(Color.white.opacity(0.20), lineWidth: 1)
         )
-        .overlay(alignment: .top) {
-            RoundedRectangle(cornerRadius: 28)
-                .fill(Color.white.opacity(0.16))
-                .frame(height: 1)
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
-        }
         .shadow(color: .black.opacity(0.20), radius: 20, x: 0, y: 12)
     }
 
@@ -52,32 +46,24 @@ struct ReminderFloatingView: View {
         Button(action: action) {
             Image(systemName: systemName)
                 .font(.system(size: 18, weight: .semibold))
-                .frame(width: 44, height: 44)
+                .frame(width: 40, height: 40)
                 .foregroundStyle(Color.white.opacity(0.92))
                 .background(.ultraThinMaterial)
-                .background(Color(red: 0.78, green: 0.67, blue: 0.78).opacity(0.36))
+                .background(Color.white.opacity(0.14))
                 .clipShape(Circle())
         }
         .buttonStyle(.plain)
         .focusable(false)
         .overlay(
             Circle()
-                .stroke(Color.white.opacity(0.52), lineWidth: 1)
+                .stroke(Color.white.opacity(0.20), lineWidth: 1)
         )
-        .overlay(alignment: .top) {
-            Circle()
-                .fill(Color.white.opacity(0.14))
-                .frame(width: 38, height: 12)
-                .offset(y: -10)
-        }
         .shadow(color: .black.opacity(0.08), radius: 6, x: 0, y: 3)
         .help(helpText(for: systemName))
     }
 
     private func helpText(for systemName: String) -> String {
         switch systemName {
-        case "xmark":
-            return "跳过本次休息"
         case "clock.arrow.circlepath":
             return "推迟5分钟"
         case "play.fill":
