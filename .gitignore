@@ -9,6 +9,7 @@ Desktop.ini
 # Swift Package Manager 构建产物
 # =========================
 .build/
+.swiftpm/
 
 # =========================
 # Xcode 构建与用户本地状态
@@ -38,7 +39,5 @@ DerivedData/
 *.bak
 *.orig
 
-# =========================
-# 依赖缓存/工具缓存（按需）
-# =========================
-.swiftpm/xcode/package.xcworkspace/xcuserdata/
+# 可选：若你希望锁定依赖版本，可提交 Package.resolved（默认当前仓库还没有该文件）
+#!Package.resolved
