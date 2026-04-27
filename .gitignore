@@ -1,0 +1,44 @@
+# =========================
+# 系统文件
+# =========================
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# =========================
+# Swift Package Manager 构建产物
+# =========================
+.build/
+
+# =========================
+# Xcode 构建与用户本地状态
+# =========================
+DerivedData/
+*.xcuserstate
+*.xcworkspace/xcuserdata/
+*.xcuserdatad/
+*.xccheckout
+*.moved-aside
+
+# =========================
+# 调试与崩溃产物
+# =========================
+*.dSYM
+*.dSYM.zip
+*.ipa
+
+# =========================
+# 日志与临时文件
+# =========================
+*.log
+*.tmp
+*.temp
+*.swp
+*.swo
+*.bak
+*.orig
+
+# =========================
+# 依赖缓存/工具缓存（按需）
+# =========================
+.swiftpm/xcode/package.xcworkspace/xcuserdata/
