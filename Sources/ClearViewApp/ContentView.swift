@@ -13,12 +13,12 @@ struct ContentView: View {
 
     // 关键流程：统一四个区域的尺寸比例，避免页面切换时布局抖动。
     private enum Layout {
-        static let cardPadding: CGFloat = 18
-        static let sectionSpacing: CGFloat = 10
-        static let topTabHeight: CGFloat = 56
-        static let displayHeight: CGFloat = 104
-        static let functionHeight: CGFloat = 72
-        static let systemHeight: CGFloat = 46
+        static let cardPadding: CGFloat = 14
+        static let sectionSpacing: CGFloat = 6
+        static let topTabHeight: CGFloat = 48
+        static let displayHeight: CGFloat = 88
+        static let functionHeight: CGFloat = 62
+        static let systemHeight: CGFloat = 42
     }
 
     // 关键流程：根据系统深浅色自动切换背景、文字、按钮层级。
@@ -68,14 +68,14 @@ struct ContentView: View {
                     .transition(.opacity.combined(with: .scale(scale: 0.96)))
             }
         }
-        .frame(minWidth: 480, minHeight: 350)
+        .frame(minWidth: 480, minHeight: 320)
         .animation(.easeInOut(duration: 0.18), value: showSettings)
     }
 
     private var topTabs: some View {
         HStack {
-            tabButton(title: "休息", icon: "timer", page: .timer)
-            tabButton(title: "护眼", icon: "leaf", page: .filter)
+            tabButton(title: "休息", page: .timer)
+            tabButton(title: "护眼", page: .filter)
         }
         .padding(6)
         .background(.ultraThinMaterial)
@@ -101,7 +101,7 @@ struct ContentView: View {
         Group {
             if page == .timer {
                 Text(format(seconds: appState.secondsUntilBreak))
-                    .font(.system(size: 78, weight: .bold, design: .rounded))
+                    .font(.system(size: 72, weight: .bold, design: .rounded))
                     .monospacedDigit()
                     .foregroundStyle(textPrimary)
                     .shadow(color: textShadow, radius: 10, x: 0, y: 4)
@@ -252,14 +252,11 @@ struct ContentView: View {
         }
     }
 
-    private func tabButton(title: String, icon: String, page target: Page) -> some View {
+    private func tabButton(title: String, page target: Page) -> some View {
         Button {
             page = target
         } label: {
-            HStack(spacing: 6) {
-                Image(systemName: icon)
-                Text(title)
-            }
+            Text(title)
             // 关键流程：将每个分段按钮扩展为整段可点击，避免“只能点文字”。
             .frame(maxWidth: .infinity)
             .font(.system(size: 13, weight: .semibold))

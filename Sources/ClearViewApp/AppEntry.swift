@@ -12,13 +12,13 @@ struct ClearViewApp: App {
             ContentView()
                 .environmentObject(appState)
                 .background(WindowChromeConfigurator())
-                .frame(minWidth: 480, minHeight: 350)
+                .frame(minWidth: 480, minHeight: 320)
         }
 
         MenuBarExtra {
             ContentView()
                 .environmentObject(appState)
-                .frame(width: 480, height: 350)
+                .frame(width: 480, height: 320)
         } label: {
             Label("ClearView", systemImage: "eye")
         }
