@@ -7,13 +7,13 @@ struct ReminderFloatingView: View {
         VStack(spacing: 14) {
             Text(appState.breakSecondsLeft == 0 ? "休息完成" : "请休息")
                 .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(Color(red: 0.15, green: 0.40, blue: 0.22))
+                .foregroundStyle(Color.white.opacity(0.90))
 
             Text("\(appState.breakSecondsLeft)")
                 .font(.system(size: 64, weight: .bold, design: .rounded))
                 .monospacedDigit()
-                .foregroundStyle(Color(red: 0.08, green: 0.28, blue: 0.14))
-                .shadow(color: .white.opacity(0.40), radius: 5, x: 0, y: 2)
+                .foregroundStyle(Color.white.opacity(0.96))
+                .shadow(color: .black.opacity(0.16), radius: 6, x: 0, y: 3)
 
             HStack(spacing: 14) {
                 floatingIconButton(systemName: "xmark") {
@@ -32,6 +32,7 @@ struct ReminderFloatingView: View {
         .padding(.horizontal, 24)
         .padding(.vertical, 18)
         .background(.ultraThinMaterial)
+        .background(Color.white.opacity(0.14))
         .clipShape(RoundedRectangle(cornerRadius: 28))
         .overlay(
             RoundedRectangle(cornerRadius: 28)
@@ -52,8 +53,9 @@ struct ReminderFloatingView: View {
             Image(systemName: systemName)
                 .font(.system(size: 18, weight: .semibold))
                 .frame(width: 44, height: 44)
-                .foregroundStyle(Color(red: 0.15, green: 0.40, blue: 0.22))
+                .foregroundStyle(Color.white.opacity(0.92))
                 .background(.ultraThinMaterial)
+                .background(Color(red: 0.78, green: 0.67, blue: 0.78).opacity(0.36))
                 .clipShape(Circle())
         }
         .buttonStyle(.plain)

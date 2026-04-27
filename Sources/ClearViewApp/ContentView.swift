@@ -2,64 +2,73 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject private var appState: AppState
+    @Environment(\.colorScheme) private var colorScheme
     @State private var page: Page = .timer
     @State private var showSettings = false
-    @State private var showQuitConfirm = false
 
     private enum Page {
         case timer
         case filter
     }
 
-    // 关键流程：统一色板，避免局部硬编码导致“浅底白字”可读性问题。
-    private enum Tone {
-        static let bg = Color(red: 0.80, green: 0.88, blue: 0.83)
-        static let textPrimary = Color(red: 0.07, green: 0.26, blue: 0.14)
-        static let textSecondary = Color(red: 0.18, green: 0.40, blue: 0.24)
-        static let selectedFill = Color(red: 0.68, green: 0.84, blue: 0.74)
-        static let strongFill = Color(red: 0.30, green: 0.64, blue: 0.36)
+    // 关键流程：统一四个区域的尺寸比例，避免页面切换时布局抖动。
+    private enum Layout {
+        static let cardPadding: CGFloat = 18
+        static let sectionSpacing: CGFloat = 10
+        static let topTabHeight: CGFloat = 56
+        static let displayHeight: CGFloat = 104
+        static let functionHeight: CGFloat = 72
+        static let systemHeight: CGFloat = 46
     }
+
+    // 关键流程：根据系统深浅色自动切换背景、文字、按钮层级。
+    private var isDark: Bool { colorScheme == .dark }
+    private var textPrimary: Color { isDark ? Color.white.opacity(0.97) : Color(red: 0.06, green: 0.24, blue: 0.14) }
+    private var textSecondary: Color { isDark ? Color.white.opacity(0.86) : Color(red: 0.14, green: 0.34, blue: 0.22) }
+    private var selectedFill: Color { isDark ? Color.white.opacity(0.24) : Color.white.opacity(0.58) }
+    private var panelTint: Color { isDark ? Color.white.opacity(0.08) : Color.white.opacity(0.34) }
+    private var buttonTint: Color { isDark ? Color.white.opacity(0.16) : Color.white.opacity(0.42) }
+    private var buttonBorder: Color { isDark ? Color.white.opacity(0.16) : Color.white.opacity(0.38) }
+    private var textShadow: Color { isDark ? Color.black.opacity(0.50) : Color.white.opacity(0.42) }
 
     var body: some View {
         ZStack {
-            // 关键流程：先给玻璃面板提供可被折射的背景层，否则“玻璃感”会发灰、发闷。
-            Tone.bg
-                .ignoresSafeArea()
+            // 关键流程：菜单窗口外壳不可控，根视图不再额外做圆角外框，避免多重边框。
+            (isDark ? Color.black : Color(red: 0.80, green: 0.88, blue: 0.83))
 
             Circle()
-                .fill(Color.white.opacity(0.30))
-                .frame(width: 300, height: 300)
-                .blur(radius: 40)
-                .offset(x: -180, y: -120)
-
-            Circle()
-                .fill(Tone.strongFill.opacity(0.20))
-                .frame(width: 260, height: 260)
+                .fill((isDark ? Color.white.opacity(0.08) : Color.white.opacity(0.30)))
+                .frame(width: 280, height: 280)
                 .blur(radius: 46)
-                .offset(x: 190, y: 120)
+                .offset(x: -170, y: -88)
 
-            glassContainer {
-                VStack(spacing: 18) {
-                    topTabs
+            Circle()
+                .fill((isDark ? Color.white.opacity(0.05) : Color(red: 0.50, green: 0.72, blue: 0.60).opacity(0.24)))
+                .frame(width: 240, height: 240)
+                .blur(radius: 54)
+                .offset(x: 180, y: 116)
 
-                    if page == .timer {
-                        timerPage
-                    } else {
-                        filterPage
-                    }
+            VStack(spacing: Layout.sectionSpacing) {
+                topTabs
+                    .frame(height: Layout.topTabHeight)
 
-                    bottomActions
-                }
-                .padding(20)
+                pageDisplayArea
+                    .frame(maxWidth: .infinity, minHeight: Layout.displayHeight, maxHeight: Layout.displayHeight)
+
+                pageFunctionArea
+                    .frame(maxWidth: .infinity, minHeight: Layout.functionHeight, maxHeight: Layout.functionHeight)
+
+                bottomActions
+                    .frame(maxWidth: .infinity, minHeight: Layout.systemHeight, maxHeight: Layout.systemHeight)
             }
-            .padding(18)
+            .padding(Layout.cardPadding)
 
             if showSettings {
                 settingsModal
                     .transition(.opacity.combined(with: .scale(scale: 0.96)))
             }
         }
-        .frame(minWidth: 480, minHeight: 380)
+        .frame(minWidth: 480, minHeight: 350)
         .animation(.easeInOut(duration: 0.18), value: showSettings)
     }
 
@@ -70,113 +79,115 @@ struct ContentView: View {
         }
         .padding(6)
         .background(.ultraThinMaterial)
+        .background(isDark ? Color.white.opacity(0.05) : panelTint)
         .overlay(
             Capsule()
-                .stroke(Color.white.opacity(0.55), lineWidth: 1)
+                .stroke(isDark ? Color.white.opacity(0.13) : Color.white.opacity(0.45), lineWidth: 1)
         )
         .clipShape(Capsule())
-        .shadow(color: .black.opacity(0.10), radius: 10, x: 0, y: 5)
+        .shadow(color: .black.opacity(isDark ? 0.34 : 0.10), radius: 14, x: 0, y: 7)
     }
 
     private var timerPage: some View {
-        VStack(spacing: 22) {
-            Text(format(seconds: appState.secondsUntilBreak))
-                .font(.system(size: 72, weight: .bold, design: .rounded))
-                .monospacedDigit()
-                .foregroundStyle(Tone.textPrimary)
-                .shadow(color: .white.opacity(0.40), radius: 5, x: 0, y: 2)
+        EmptyView()
+    }
 
-            HStack(spacing: 16) {
-                roundIconButton(
-                    systemName: appState.reminderEnabled ? "pause.fill" : "play.fill",
-                    accessibility: appState.reminderEnabled ? "暂停" : "开始"
-                ) {
-                    appState.toggleReminder(!appState.reminderEnabled)
-                }
+    private var filterPage: some View {
+        EmptyView()
+    }
 
-                roundIconButton(systemName: "arrow.clockwise", accessibility: "重置") {
-                    appState.resetReminderTimer()
-                }
+    // 关键流程：中部显示区只承载“大信息”，保证两页尺寸一致。
+    private var pageDisplayArea: some View {
+        Group {
+            if page == .timer {
+                Text(format(seconds: appState.secondsUntilBreak))
+                    .font(.system(size: 78, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(textPrimary)
+                    .shadow(color: textShadow, radius: 10, x: 0, y: 4)
+            } else {
+                Text("蓝光过滤")
+                    .font(.system(size: 42, weight: .bold, design: .rounded))
+                    .foregroundStyle(textPrimary)
+                    .shadow(color: textShadow, radius: 8, x: 0, y: 3)
             }
         }
     }
 
-    private var filterPage: some View {
-        VStack(spacing: 22) {
-            Text(appState.filterLevel.title)
-                .font(.system(size: 54, weight: .bold, design: .rounded))
-                .foregroundStyle(Tone.textPrimary)
-                .shadow(color: .white.opacity(0.40), radius: 5, x: 0, y: 2)
-
-            HStack(spacing: 10) {
-                ForEach(BlueLightLevel.allCases, id: \.self) { level in
-                    Button {
-                        appState.applyFilter(level)
-                    } label: {
-                        VStack(spacing: 6) {
-                            Image(systemName: level.iconName)
-                                .font(.system(size: 18, weight: .semibold))
-                            Text(level.title)
-                                .font(.caption)
-                        }
-                        .frame(width: 66, height: 58)
-                        .foregroundStyle(Tone.textPrimary)
-                        .background(appState.filterLevel == level ? Tone.selectedFill : Color.clear)
-                        .modifier(
-                            GlassButtonModifier(
-                                cornerRadius: 18,
-                                intensity: appState.filterLevel == level ? 0.45 : 1.0
-                            )
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 18))
+    // 关键流程：功能按钮区承载页面内操作，和系统按钮区分层。
+    private var pageFunctionArea: some View {
+        Group {
+            if page == .timer {
+                HStack(spacing: 14) {
+                    roundIconButton(
+                        systemName: appState.reminderEnabled ? "pause.fill" : "play.fill",
+                        accessibility: appState.reminderEnabled ? "暂停" : "开始"
+                    ) {
+                        appState.toggleReminder(!appState.reminderEnabled)
                     }
-                    .buttonStyle(.plain)
-                    .help("切换到\(level.title)过滤")
-                }
-            }
 
-            roundIconButton(systemName: "arrow.counterclockwise", accessibility: "恢复默认") {
-                appState.applyFilter(.off)
+                    roundIconButton(systemName: "arrow.clockwise", accessibility: "重置") {
+                        appState.resetReminderTimer()
+                    }
+                }
+            } else {
+                HStack(spacing: 10) {
+                    ForEach(BlueLightLevel.allCases, id: \.self) { level in
+                        Button {
+                            appState.applyFilter(level)
+                        } label: {
+                            VStack(spacing: 6) {
+                                Image(systemName: level.iconName)
+                                    .font(.system(size: 18, weight: .semibold))
+                                Text(level.title)
+                                    .font(.caption)
+                            }
+                            .frame(width: 64, height: 56)
+                            .foregroundStyle(textSecondary)
+                            .background(appState.filterLevel == level ? selectedFill : Color.clear)
+                            .modifier(
+                                GlassButtonModifier(
+                                    cornerRadius: 18,
+                                    intensity: appState.filterLevel == level ? 0.45 : 1.0,
+                                    tint: buttonTint,
+                                    border: buttonBorder
+                                )
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 18))
+                        }
+                        .buttonStyle(.plain)
+                        .help("切换到\(level.title)过滤")
+                    }
+                }
             }
         }
     }
 
     private var bottomActions: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 12) {
             Spacer()
 
             if page == .timer {
-                bottomIconButton(systemName: "leaf", help: "打开蓝光过滤") {
-                    page = .filter
+                // 关键流程：休息页底部只保留设置、测试、退出。
+                bottomIconButton(systemName: "gearshape", help: "打开设置") {
+                    withAnimation(.easeInOut(duration: 0.18)) {
+                        showSettings.toggle()
+                    }
+                }
+
+                bottomIconButton(systemName: "bell.badge", help: "测试休息提醒") {
+                    appState.triggerTestReminderNow()
                 }
             } else {
-                bottomIconButton(systemName: "timer", help: "返回休息计时") {
-                    page = .timer
-                }
-            }
-
-            bottomIconButton(systemName: "gearshape", help: "打开设置") {
-                withAnimation(.easeInOut(duration: 0.18)) {
-                    showSettings.toggle()
-                }
-            }
-
-            bottomIconButton(systemName: "bell.badge", help: "测试休息提醒") {
-                appState.triggerTestReminderNow()
+                // 关键流程：过滤页底部仅保留退出按钮，减少重复操作入口。
             }
 
             bottomIconButton(systemName: "power", help: "退出应用") {
-                showQuitConfirm = true
-            }
-        }
-        .alert("退出 ClearView？", isPresented: $showQuitConfirm) {
-            Button("取消", role: .cancel) {}
-            Button("退出", role: .destructive) {
+                // 关键流程：MenuBarExtra 场景下 alert 容易与菜单行为冲突，改为点击即退出。
                 appState.quitApplication()
             }
-        } message: {
-            Text("退出后将停止休息提醒，并恢复默认显示色彩。")
         }
+        .padding(.horizontal, 2)
     }
 
     private var settingsModal: some View {
@@ -191,7 +202,7 @@ struct ContentView: View {
                 HStack {
                     Text("设置")
                         .font(.headline)
-                        .foregroundStyle(Tone.textPrimary)
+                        .foregroundStyle(textPrimary)
                     Spacer()
                     Button {
                         showSettings = false
@@ -199,11 +210,13 @@ struct ContentView: View {
                         Image(systemName: "xmark")
                             .font(.system(size: 13, weight: .semibold))
                             .frame(width: 30, height: 30)
-                            .foregroundStyle(Tone.textSecondary)
-                            .background(Color.white.opacity(0.8))
+                            .foregroundStyle(textSecondary)
+                            .background(Color.clear)
+                            .modifier(GlassButtonModifier(cornerRadius: 15, intensity: 1.0, tint: buttonTint, border: buttonBorder))
                             .clipShape(Circle())
                     }
                     .buttonStyle(.plain)
+                    .focusable(false)
                     .help("关闭设置")
                 }
 
@@ -252,8 +265,9 @@ struct ContentView: View {
             .font(.system(size: 13, weight: .semibold))
             .padding(.horizontal, 18)
             .padding(.vertical, 10)
-            .foregroundStyle(page == target ? Tone.textPrimary : Tone.textSecondary)
-            .background(page == target ? Tone.selectedFill.opacity(0.92) : Color.clear)
+            .foregroundStyle(page == target ? textPrimary : textSecondary)
+            .background(page == target ? (isDark ? Color.white.opacity(0.18) : selectedFill) : Color.clear)
+            .modifier(HoverActivationModifier(cornerRadius: 999, tint: selectedFill, isActive: page == target))
             .clipShape(Capsule())
             .contentShape(Capsule())
         }
@@ -268,9 +282,9 @@ struct ContentView: View {
             Image(systemName: systemName)
                 .font(.system(size: 24, weight: .semibold))
                 .frame(width: 58, height: 58)
-                .foregroundStyle(Tone.textPrimary)
+                .foregroundStyle(textPrimary)
                 .background(Color.clear)
-                .modifier(GlassButtonModifier(cornerRadius: 29, intensity: 1.0))
+                .modifier(GlassButtonModifier(cornerRadius: 29, intensity: 1.0, tint: buttonTint, border: buttonBorder))
                 .clipShape(Circle())
         }
         .buttonStyle(.plain)
@@ -283,10 +297,10 @@ struct ContentView: View {
         Button(action: action) {
             Image(systemName: systemName)
                 .font(.system(size: 15, weight: .semibold))
-                .frame(width: 36, height: 36)
-                .foregroundStyle(Tone.textSecondary)
+                .frame(width: 40, height: 40)
+                .foregroundStyle(textSecondary)
                 .background(Color.clear)
-                .modifier(GlassButtonModifier(cornerRadius: 18, intensity: 1.0))
+                .modifier(GlassButtonModifier(cornerRadius: 20, intensity: 1.0, tint: buttonTint, border: buttonBorder))
                 .clipShape(Circle())
         }
         .buttonStyle(.plain)
@@ -308,7 +322,7 @@ struct ContentView: View {
                 Spacer()
                 Text("\(selected)\(unit)")
                     .font(.caption)
-                    .foregroundStyle(Tone.textSecondary.opacity(0.88))
+                    .foregroundStyle(textSecondary.opacity(0.92))
             }
 
             HStack(spacing: 8) {
@@ -319,9 +333,9 @@ struct ContentView: View {
                         Text("\(value)")
                             .font(.caption.weight(.semibold))
                             .frame(width: 48, height: 28)
-                            .foregroundStyle(Tone.textPrimary)
-                            .background(selected == value ? Tone.selectedFill : Color.clear)
-                            .modifier(GlassButtonModifier(cornerRadius: 14, intensity: selected == value ? 0.45 : 1.0))
+                            .foregroundStyle(textPrimary)
+                            .background(selected == value ? selectedFill : Color.clear)
+                            .modifier(GlassButtonModifier(cornerRadius: 14, intensity: selected == value ? 0.45 : 1.0, tint: buttonTint, border: buttonBorder))
                             .clipShape(Capsule())
                     }
                     .buttonStyle(.plain)
@@ -335,6 +349,7 @@ struct ContentView: View {
     private func glassContainer<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         content()
             .background(.ultraThinMaterial)
+            .background(panelTint)
             .clipShape(RoundedRectangle(cornerRadius: 32))
             .overlay(
                 RoundedRectangle(cornerRadius: 32)
@@ -347,7 +362,14 @@ struct ContentView: View {
                     .padding(.horizontal, 18)
                     .padding(.top, 10)
             }
-            .shadow(color: .black.opacity(0.20), radius: 24, x: 0, y: 14)
+            .overlay(alignment: .bottom) {
+                RoundedRectangle(cornerRadius: 32)
+                    .fill(Color.black.opacity(0.08))
+                    .frame(height: 28)
+                    .blur(radius: 20)
+                    .offset(y: 10)
+            }
+            .shadow(color: .black.opacity(isDark ? 0.46 : 0.18), radius: 24, x: 0, y: 14)
     }
 
     private func format(seconds: Int) -> String {
@@ -360,25 +382,82 @@ struct ContentView: View {
 private struct GlassButtonModifier: ViewModifier {
     let cornerRadius: CGFloat
     let intensity: CGFloat
+    let tint: Color
+    let border: Color
+    @State private var isHovering = false
 
     func body(content: Content) -> some View {
+        let activeBoost = isHovering ? 0.10 : 0.0
+        let fillOpacity = min(1.0, 0.70 * intensity + activeBoost)
+        let borderOpacity = min(1.0, 0.58 * intensity + (isHovering ? 0.16 : 0.0))
+
         content
-            // 关键流程：按钮玻璃使用 material + 双描边 + 顶部高光，形成“凸起”质感。
+            // 关键流程：用暗部边缘、中心亮部和底部阴影塑造玻璃体积，避免发光描边。
             .background(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .fill(.ultraThinMaterial)
-                    .opacity(0.8 * intensity)
+                    .background(
+                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                            .fill(tint.opacity(fillOpacity))
+                    )
+            )
+            .background(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .fill(
+                        RadialGradient(
+                            colors: [
+                                Color.white.opacity(isHovering ? 0.20 : 0.12),
+                                Color.white.opacity(0.03),
+                                Color.black.opacity(isHovering ? 0.16 : 0.24)
+                            ],
+                            center: .topLeading,
+                            startRadius: 4,
+                            endRadius: 82
+                        )
+                    )
             )
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .stroke(Color.white.opacity(0.52 * intensity), lineWidth: 1)
+                    .stroke(border.opacity(borderOpacity), lineWidth: 1)
             )
-            .overlay(alignment: .top) {
+            .overlay(alignment: .bottom) {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(Color.white.opacity(0.16 * intensity))
-                    .frame(height: 1)
-                    .padding(.horizontal, 6)
+                    .fill(Color.black.opacity((isHovering ? 0.26 : 0.32) * intensity))
+                    .frame(height: 12)
+                    .blur(radius: 9)
+                    .offset(y: 5)
             }
-            .shadow(color: .black.opacity(0.08 * intensity), radius: 6, x: 0, y: 3)
+            .scaleEffect(isHovering ? 1.035 : 1.0)
+            .offset(y: isHovering ? -1.5 : 0)
+            .shadow(
+                color: .black.opacity((isHovering ? 0.38 : 0.28) * intensity),
+                radius: isHovering ? 15 : 10,
+                x: 0,
+                y: isHovering ? 9 : 6
+            )
+            .animation(.easeOut(duration: 0.16), value: isHovering)
+            .onHover { hovering in
+                isHovering = hovering
+            }
+    }
+}
+
+private struct HoverActivationModifier: ViewModifier {
+    let cornerRadius: CGFloat
+    let tint: Color
+    let isActive: Bool
+    @State private var isHovering = false
+
+    func body(content: Content) -> some View {
+        content
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .fill(tint.opacity(!isActive && isHovering ? 0.18 : 0.0))
+            )
+            .scaleEffect(isHovering ? 1.015 : 1.0)
+            .animation(.easeOut(duration: 0.16), value: isHovering)
+            .onHover { hovering in
+                isHovering = hovering
+            }
     }
 }

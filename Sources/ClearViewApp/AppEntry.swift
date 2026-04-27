@@ -11,18 +11,40 @@ struct ClearViewApp: App {
         WindowGroup("ClearView") {
             ContentView()
                 .environmentObject(appState)
-                .frame(minWidth: 480, minHeight: 380)
+                .background(WindowChromeConfigurator())
+                .frame(minWidth: 480, minHeight: 350)
         }
 
         MenuBarExtra {
             ContentView()
                 .environmentObject(appState)
-                .frame(width: 480)
+                .frame(width: 480, height: 350)
         } label: {
             Label("ClearView", systemImage: "eye")
         }
         .menuBarExtraStyle(.window)
     }
+}
+
+struct WindowChromeConfigurator: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async {
+            guard let window = view.window else { return }
+            // 关键流程：让主窗口本身透明，圆角由 SwiftUI 内容层负责绘制。
+            window.isOpaque = false
+            window.backgroundColor = .clear
+            window.titleVisibility = .hidden
+            window.titlebarAppearsTransparent = true
+            window.styleMask.insert(.fullSizeContentView)
+            window.standardWindowButton(.closeButton)?.isHidden = true
+            window.standardWindowButton(.miniaturizeButton)?.isHidden = true
+            window.standardWindowButton(.zoomButton)?.isHidden = true
+        }
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {}
 }
 
 @MainActor
