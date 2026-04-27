@@ -27,23 +27,23 @@ struct ContentView: View {
     private var textSecondary: Color { isDark ? Color.white.opacity(0.86) : Color(red: 0.14, green: 0.34, blue: 0.22) }
     private var selectedFill: Color { isDark ? Color.white.opacity(0.24) : Color.white.opacity(0.58) }
     private var panelTint: Color { isDark ? Color.white.opacity(0.08) : Color.white.opacity(0.34) }
-    private var buttonTint: Color { isDark ? Color.white.opacity(0.16) : Color.white.opacity(0.42) }
-    private var buttonBorder: Color { isDark ? Color.white.opacity(0.16) : Color.white.opacity(0.38) }
+    private var buttonTint: Color { isDark ? Color.white.opacity(0.22) : Color.white.opacity(0.48) }
+    private var buttonBorder: Color { isDark ? Color.white.opacity(0.22) : Color.white.opacity(0.44) }
     private var textShadow: Color { isDark ? Color.black.opacity(0.50) : Color.white.opacity(0.42) }
 
     var body: some View {
         ZStack {
             // 关键流程：菜单窗口外壳不可控，根视图不再额外做圆角外框，避免多重边框。
-            (isDark ? Color.black : Color(red: 0.80, green: 0.88, blue: 0.83))
+            (isDark ? Color.black.opacity(0.35) : Color(red: 0.80, green: 0.88, blue: 0.83).opacity(0.38))
 
             Circle()
-                .fill((isDark ? Color.white.opacity(0.08) : Color.white.opacity(0.30)))
+                .fill((isDark ? Color.white.opacity(0.03) : Color.white.opacity(0.12)))
                 .frame(width: 280, height: 280)
                 .blur(radius: 46)
                 .offset(x: -170, y: -88)
 
             Circle()
-                .fill((isDark ? Color.white.opacity(0.05) : Color(red: 0.50, green: 0.72, blue: 0.60).opacity(0.24)))
+                .fill((isDark ? Color.white.opacity(0.02) : Color(red: 0.50, green: 0.72, blue: 0.60).opacity(0.10)))
                 .frame(width: 240, height: 240)
                 .blur(radius: 54)
                 .offset(x: 180, y: 116)
@@ -75,7 +75,7 @@ struct ContentView: View {
     private var topTabs: some View {
         HStack {
             tabButton(title: "休息", icon: "timer", page: .timer)
-            tabButton(title: "过滤", icon: "leaf", page: .filter)
+            tabButton(title: "护眼", icon: "leaf", page: .filter)
         }
         .padding(6)
         .background(.ultraThinMaterial)
@@ -106,7 +106,7 @@ struct ContentView: View {
                     .foregroundStyle(textPrimary)
                     .shadow(color: textShadow, radius: 10, x: 0, y: 4)
             } else {
-                Text("蓝光过滤")
+                Text("护眼模式")
                     .font(.system(size: 42, weight: .bold, design: .rounded))
                     .foregroundStyle(textPrimary)
                     .shadow(color: textShadow, radius: 8, x: 0, y: 3)
@@ -121,12 +121,12 @@ struct ContentView: View {
                 HStack(spacing: 14) {
                     roundIconButton(
                         systemName: appState.reminderEnabled ? "pause.fill" : "play.fill",
-                        accessibility: appState.reminderEnabled ? "暂停" : "开始"
+                        accessibility: appState.reminderEnabled ? "暂停计时" : "开始计时"
                     ) {
                         appState.toggleReminder(!appState.reminderEnabled)
                     }
 
-                    roundIconButton(systemName: "arrow.clockwise", accessibility: "重置") {
+                    roundIconButton(systemName: "arrow.clockwise", accessibility: "重新开始") {
                         appState.resetReminderTimer()
                     }
                 }
@@ -156,7 +156,7 @@ struct ContentView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 18))
                         }
                         .buttonStyle(.plain)
-                        .help("切换到\(level.title)过滤")
+                        .help("选择\(level.title)")
                     }
                 }
             }
@@ -169,20 +169,20 @@ struct ContentView: View {
 
             if page == .timer {
                 // 关键流程：休息页底部只保留设置、测试、退出。
-                bottomIconButton(systemName: "gearshape", help: "打开设置") {
+                bottomIconButton(systemName: "gearshape", help: "调整节奏") {
                     withAnimation(.easeInOut(duration: 0.18)) {
                         showSettings.toggle()
                     }
                 }
 
-                bottomIconButton(systemName: "bell.badge", help: "测试休息提醒") {
+                bottomIconButton(systemName: "bell.badge", help: "试试提醒") {
                     appState.triggerTestReminderNow()
                 }
             } else {
                 // 关键流程：过滤页底部仅保留退出按钮，减少重复操作入口。
             }
 
-            bottomIconButton(systemName: "power", help: "退出应用") {
+            bottomIconButton(systemName: "power", help: "退出 ClearView") {
                 // 关键流程：MenuBarExtra 场景下 alert 容易与菜单行为冲突，改为点击即退出。
                 appState.quitApplication()
             }
@@ -200,7 +200,7 @@ struct ContentView: View {
 
             VStack(alignment: .leading, spacing: 14) {
                 HStack {
-                    Text("设置")
+                    Text("小设置")
                         .font(.headline)
                         .foregroundStyle(textPrimary)
                     Spacer()
@@ -217,18 +217,18 @@ struct ContentView: View {
                     }
                     .buttonStyle(.plain)
                     .focusable(false)
-                    .help("关闭设置")
+                    .help("收起设置")
                 }
 
             presetRow(
-                title: "提醒间隔",
+                title: "多久提醒",
                 values: [20, 25, 45, 60],
                 unit: "分钟",
                 selected: appState.workIntervalMinutes
             ) { appState.updateInterval($0) }
 
             presetRow(
-                title: "休息时长",
+                title: "休息多久",
                 values: [20, 40, 60, 90],
                 unit: "秒",
                 selected: appState.breakDurationSeconds
@@ -274,7 +274,7 @@ struct ContentView: View {
         .buttonStyle(.plain)
         // 关键流程：关闭键盘焦点环，避免出现绿色方框边。
         .focusable(false)
-        .help("切换到\(title)页面")
+        .help("看看\(title)")
     }
 
     private func roundIconButton(systemName: String, accessibility: String, action: @escaping () -> Void) -> some View {
@@ -340,7 +340,7 @@ struct ContentView: View {
                     }
                     .buttonStyle(.plain)
                     .focusable(false)
-                    .help("设置\(title)为\(value)\(unit)")
+                    .help("\(value)\(unit)")
                 }
             }
         }
@@ -387,53 +387,30 @@ private struct GlassButtonModifier: ViewModifier {
     @State private var isHovering = false
 
     func body(content: Content) -> some View {
-        let activeBoost = isHovering ? 0.10 : 0.0
-        let fillOpacity = min(1.0, 0.70 * intensity + activeBoost)
-        let borderOpacity = min(1.0, 0.58 * intensity + (isHovering ? 0.16 : 0.0))
+        let fillOpacity = (isHovering ? 0.28 : 0.18) * intensity
+        let borderOpacity = (isHovering ? 0.36 : 0.24) * intensity
 
         content
-            // 关键流程：用暗部边缘、中心亮部和底部阴影塑造玻璃体积，避免发光描边。
+            // 关键流程：保留通透感，去掉复杂边缘效果，只用轻背景、细边框和 hover 提亮表达状态。
             .background(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .fill(.ultraThinMaterial)
-                    .background(
-                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                            .fill(tint.opacity(fillOpacity))
-                    )
             )
             .background(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(
-                        RadialGradient(
-                            colors: [
-                                Color.white.opacity(isHovering ? 0.20 : 0.12),
-                                Color.white.opacity(0.03),
-                                Color.black.opacity(isHovering ? 0.16 : 0.24)
-                            ],
-                            center: .topLeading,
-                            startRadius: 4,
-                            endRadius: 82
-                        )
-                    )
+                    .fill(tint.opacity(fillOpacity))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .stroke(border.opacity(borderOpacity), lineWidth: 1)
             )
-            .overlay(alignment: .bottom) {
-                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(Color.black.opacity((isHovering ? 0.26 : 0.32) * intensity))
-                    .frame(height: 12)
-                    .blur(radius: 9)
-                    .offset(y: 5)
-            }
-            .scaleEffect(isHovering ? 1.035 : 1.0)
-            .offset(y: isHovering ? -1.5 : 0)
+            .scaleEffect(isHovering ? 1.025 : 1.0)
+            .offset(y: isHovering ? -1 : 0)
             .shadow(
-                color: .black.opacity((isHovering ? 0.38 : 0.28) * intensity),
-                radius: isHovering ? 15 : 10,
+                color: .black.opacity((isHovering ? 0.24 : 0.14) * intensity),
+                radius: isHovering ? 10 : 6,
                 x: 0,
-                y: isHovering ? 9 : 6
+                y: isHovering ? 5 : 3
             )
             .animation(.easeOut(duration: 0.16), value: isHovering)
             .onHover { hovering in

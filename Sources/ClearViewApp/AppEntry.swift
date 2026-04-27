@@ -51,9 +51,9 @@ struct WindowChromeConfigurator: NSViewRepresentable {
 final class AppState: ObservableObject {
     enum ReminderPhase {
         case none
-        case gentle
-        case strong
-        case final
+        case preparing
+        case resting
+        case completed
     }
 
     @Published var reminderEnabled = true
@@ -61,12 +61,13 @@ final class AppState: ObservableObject {
     @Published var breakDurationSeconds: Int = 20
     @Published var secondsUntilBreak: Int = 20 * 60
     @Published var filterLevel: BlueLightLevel = .off
-    @Published var statusText: String = "运行中"
+    @Published var statusText: String = "陪你护眼"
     @Published var reminderPhase: ReminderPhase = .none
     @Published var breakSecondsLeft: Int = 20
 
     let reminderService = ReminderService()
     let blueLightService = BlueLightFilterService()
+    private let preparationSeconds = 5
     private var breakCountdownTimer: Timer?
     private var reminderPanel: ReminderPanelController?
 
@@ -93,10 +94,10 @@ final class AppState: ObservableObject {
         reminderEnabled = enabled
         if enabled {
             reminderService.start(intervalMinutes: workIntervalMinutes)
-            statusText = "提醒已开启"
+            statusText = "会按时提醒你"
         } else {
             reminderService.stop()
-            statusText = "提醒已暂停"
+            statusText = "先不打扰"
         }
     }
 
@@ -104,27 +105,27 @@ final class AppState: ObservableObject {
         workIntervalMinutes = max(1, minutes)
         if reminderEnabled {
             reminderService.start(intervalMinutes: workIntervalMinutes)
-            statusText = "提醒间隔已更新"
+            statusText = "节奏已调整"
         }
     }
 
     func updateBreakDuration(_ seconds: Int) {
         breakDurationSeconds = max(5, seconds)
         breakSecondsLeft = breakDurationSeconds
-        statusText = "休息时长已更新"
+        statusText = "休息时间已调整"
     }
 
     func resetReminderTimer() {
         reminderEnabled = false
         reminderService.reset(intervalMinutes: workIntervalMinutes)
-        statusText = "计时已重置"
+        statusText = "重新开始"
     }
 
     func applyFilter(_ level: BlueLightLevel) {
         filterLevel = level
         // 关键流程：蓝光档位切换时立即应用到所有可用显示器。
         blueLightService.apply(level: level)
-        statusText = "过滤档位：\(level.title)"
+        statusText = "护眼：\(level.title)"
     }
 
     func triggerTestReminderNow() {
@@ -133,7 +134,7 @@ final class AppState: ObservableObject {
 
     func triggerTestReminder(after seconds: Int) {
         let safeSeconds = max(1, seconds)
-        statusText = "\(safeSeconds)秒后触发测试提醒"
+        statusText = "\(safeSeconds)秒后提醒你"
         DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(safeSeconds)) { [weak self] in
             guard let self else { return }
             Task { @MainActor in
@@ -144,19 +145,19 @@ final class AppState: ObservableObject {
 
     func completeBreak() {
         endReminderFlow()
-        statusText = "休息已完成"
+        statusText = "眼睛放松好了"
         reminderService.start(intervalMinutes: workIntervalMinutes)
     }
 
     func skipBreak() {
         endReminderFlow()
-        statusText = "已跳过本次提醒"
+        statusText = "先继续也可以"
         reminderService.start(intervalMinutes: workIntervalMinutes)
     }
 
     func snoozeBreak(minutes: Int = 5) {
         endReminderFlow()
-        statusText = "已推迟\(minutes)分钟"
+        statusText = "\(minutes)分钟后再提醒"
         reminderService.snooze(minutes: minutes)
     }
 
@@ -167,34 +168,34 @@ final class AppState: ObservableObject {
     }
 
     private func startReminderFlow() {
-        // 关键流程：提醒到点时显示屏幕顶部居中的独立浮窗，避免只在菜单栏无感提示。
-        reminderPhase = .gentle
-        breakSecondsLeft = breakDurationSeconds
-        statusText = "请开始休息"
+        // 关键流程：先给用户 5 秒反应时间，再进入正式休息倒计时。
+        reminderPhase = .preparing
+        breakSecondsLeft = preparationSeconds
+        statusText = "准备放松眼睛"
         NSApplication.shared.activate(ignoringOtherApps: true)
         reminderPanel?.show()
-        startBreakCountdown()
+        startPreparationCountdown()
+    }
 
-        // 关键流程：三段式提醒升级，10秒后增强提醒强度。
-        DispatchQueue.main.asyncAfter(deadline: .now() + 10) { [weak self] in
+    private func startPreparationCountdown() {
+        breakCountdownTimer?.invalidate()
+        breakCountdownTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             guard let self else { return }
             Task { @MainActor in
-                guard self.reminderPhase == .gentle else { return }
-                self.reminderPhase = .strong
-                self.statusText = "提醒升级：请尽快休息"
+                guard self.reminderPhase == .preparing else { return }
+                self.breakSecondsLeft -= 1
+                if self.breakSecondsLeft <= 0 {
+                    self.reminderPhase = .resting
+                    self.breakSecondsLeft = self.breakDurationSeconds
+                    self.statusText = "看看远方吧"
+                    self.breakCountdownTimer?.invalidate()
+                    self.breakCountdownTimer = nil
+                    self.startBreakCountdown()
+                }
             }
         }
-
-        // 关键流程：20秒仍未处理时进入兜底提醒（请求注意+蜂鸣）。
-        DispatchQueue.main.asyncAfter(deadline: .now() + 20) { [weak self] in
-            guard let self else { return }
-            Task { @MainActor in
-                guard self.reminderPhase != .none else { return }
-                self.reminderPhase = .final
-                self.statusText = "强提醒：请完成休息"
-                NSApplication.shared.requestUserAttention(.criticalRequest)
-                NSSound.beep()
-            }
+        if let timer = breakCountdownTimer {
+            RunLoop.main.add(timer, forMode: .common)
         }
     }
 
@@ -203,12 +204,13 @@ final class AppState: ObservableObject {
         breakCountdownTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             guard let self else { return }
             Task { @MainActor in
-                guard self.reminderPhase != .none else { return }
+                guard self.reminderPhase == .resting else { return }
                 self.breakSecondsLeft -= 1
                 if self.breakSecondsLeft <= 0 {
                     // 关键流程：休息倒计时结束后不自动关闭浮窗，等待用户点击继续按钮。
+                    self.reminderPhase = .completed
                     self.breakSecondsLeft = 0
-                    self.statusText = "休息完成，点击继续"
+                    self.statusText = "休息好了"
                     self.breakCountdownTimer?.invalidate()
                     self.breakCountdownTimer = nil
                 }
@@ -287,7 +289,8 @@ final class ReminderPanelController {
         let width: CGFloat = 420
         let height: CGFloat = 210
         let x = visibleFrame.midX - width / 2
-        let y = visibleFrame.maxY - height - 32
+        // 关键流程：提示窗顶部留出约 80px，不贴菜单栏，减少压迫感。
+        let y = visibleFrame.maxY - height - 80
         panel.setFrame(NSRect(x: x, y: y, width: width, height: height), display: true)
     }
 }

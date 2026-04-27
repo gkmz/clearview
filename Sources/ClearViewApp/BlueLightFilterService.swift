@@ -9,9 +9,9 @@ enum BlueLightLevel: CaseIterable {
 
     var title: String {
         switch self {
-        case .off: return "关闭"
-        case .light: return "轻度"
-        case .medium: return "中度"
+        case .off: return "原色"
+        case .light: return "轻柔"
+        case .medium: return "舒缓"
         case .night: return "夜间"
         }
     }
