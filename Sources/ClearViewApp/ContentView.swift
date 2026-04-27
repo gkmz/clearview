@@ -247,14 +247,19 @@ struct ContentView: View {
                 Image(systemName: icon)
                 Text(title)
             }
+            // 关键流程：将每个分段按钮扩展为整段可点击，避免“只能点文字”。
+            .frame(maxWidth: .infinity)
             .font(.system(size: 13, weight: .semibold))
             .padding(.horizontal, 18)
             .padding(.vertical, 10)
             .foregroundStyle(page == target ? Tone.textPrimary : Tone.textSecondary)
             .background(page == target ? Tone.selectedFill.opacity(0.92) : Color.clear)
             .clipShape(Capsule())
+            .contentShape(Capsule())
         }
         .buttonStyle(.plain)
+        // 关键流程：关闭键盘焦点环，避免出现绿色方框边。
+        .focusable(false)
         .help("切换到\(title)页面")
     }
 
@@ -269,6 +274,7 @@ struct ContentView: View {
                 .clipShape(Circle())
         }
         .buttonStyle(.plain)
+        .focusable(false)
         .accessibilityLabel(accessibility)
         .help(accessibility)
     }
@@ -284,6 +290,7 @@ struct ContentView: View {
                 .clipShape(Circle())
         }
         .buttonStyle(.plain)
+        .focusable(false)
         .help(help)
     }
 
@@ -318,6 +325,7 @@ struct ContentView: View {
                             .clipShape(Capsule())
                     }
                     .buttonStyle(.plain)
+                    .focusable(false)
                     .help("设置\(title)为\(value)\(unit)")
                 }
             }

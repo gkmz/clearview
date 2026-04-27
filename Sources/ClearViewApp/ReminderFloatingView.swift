@@ -57,6 +57,7 @@ struct ReminderFloatingView: View {
                 .clipShape(Circle())
         }
         .buttonStyle(.plain)
+        .focusable(false)
         .overlay(
             Circle()
                 .stroke(Color.white.opacity(0.52), lineWidth: 1)
