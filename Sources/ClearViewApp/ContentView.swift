@@ -504,11 +504,15 @@ struct ContentView: View {
         isExpanded: Binding<Bool>,
         @ViewBuilder content: () -> Content
     ) -> some View {
-        VStack(alignment: .leading, spacing: isExpanded.wrappedValue ? 10 : 0) {
+        let toggleSection = {
+            withAnimation(.easeInOut(duration: 0.18)) {
+                isExpanded.wrappedValue.toggle()
+            }
+        }
+
+        return VStack(alignment: .leading, spacing: isExpanded.wrappedValue ? 10 : 0) {
             Button {
-                withAnimation(.easeInOut(duration: 0.18)) {
-                    isExpanded.wrappedValue.toggle()
-                }
+                toggleSection()
             } label: {
                 HStack {
                     Text(title)
@@ -520,6 +524,8 @@ struct ContentView: View {
                         .foregroundStyle(textSecondary)
                         .rotationEffect(.degrees(isExpanded.wrappedValue ? 0 : -90))
                 }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 1)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -535,6 +541,13 @@ struct ContentView: View {
         .padding(10)
         .background(Color.white.opacity(0.06))
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        // 关键流程：折叠状态下整张小标题卡片都可点击，避免只能点文字行。
+        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .onTapGesture {
+            if !isExpanded.wrappedValue {
+                toggleSection()
+            }
+        }
     }
 
     private func opacitySettingRow(
