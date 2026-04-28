@@ -93,12 +93,17 @@ struct ContentView: View {
 
     @ViewBuilder
     private var backgroundImage: some View {
-        // 关键流程：SwiftPM 资源中的图片用 Bundle.module 显式读取，避免名称解析失败。
-        if let url = Bundle.module.url(forResource: isDark ? "dark-background" : "light-background", withExtension: "jpg"),
-           let image = NSImage(contentsOf: url) {
-            Image(nsImage: image)
-                .resizable()
-                .scaledToFill()
+        // 关键流程：允许用户关闭背景图，直接回退为纯色背景，减少干扰。
+        if appState.useBackgroundImage {
+            // 关键流程：SwiftPM 资源中的图片用 Bundle.module 显式读取，避免名称解析失败。
+            if let url = Bundle.module.url(forResource: isDark ? "dark-background" : "light-background", withExtension: "jpg"),
+               let image = NSImage(contentsOf: url) {
+                Image(nsImage: image)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                (isDark ? Color.black : Color(red: 0.93, green: 0.96, blue: 0.94))
+            }
         } else {
             (isDark ? Color.black : Color(red: 0.93, green: 0.96, blue: 0.94))
         }
@@ -243,7 +248,7 @@ struct ContentView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 18))
                         }
                         .buttonStyle(.plain)
-                        .help("选择\(level.title)")
+                        .hoverTooltip("选择\(level.title)")
                     }
                 }
             }
@@ -255,7 +260,7 @@ struct ContentView: View {
             Spacer()
 
             if page == .timer {
-                // 关键流程：休息页底部只保留设置、测试、退出。
+                // 关键流程：休息页保留设置和测试，右侧电源按钮只隐藏主界面。
                 bottomIconButton(systemName: "gearshape", help: "调整节奏") {
                     withAnimation(.easeInOut(duration: 0.18)) {
                         showSettings.toggle()
@@ -266,12 +271,11 @@ struct ContentView: View {
                     appState.triggerTestReminderNow()
                 }
             } else {
-                // 关键流程：过滤页底部仅保留退出按钮，减少重复操作入口。
+                // 关键流程：过滤页不重复展示过滤入口，只保留隐藏主界面的系统动作。
             }
 
-            bottomIconButton(systemName: "power", help: "退出 ClearView") {
-                // 关键流程：MenuBarExtra 场景下 alert 容易与菜单行为冲突，改为点击即退出。
-                appState.quitApplication()
+            bottomIconButton(systemName: "power", help: "隐藏主界面") {
+                appState.hideMainPanel()
             }
         }
         .padding(.horizontal, 2)
@@ -304,7 +308,7 @@ struct ContentView: View {
                     }
                     .buttonStyle(.plain)
                     .focusable(false)
-                    .help("收起设置")
+                    .hoverTooltip("收起设置")
                 }
 
             presetRow(
@@ -320,6 +324,16 @@ struct ContentView: View {
                 unit: "秒",
                 selected: appState.breakDurationSeconds
             ) { appState.updateBreakDuration($0) }
+
+            Toggle(isOn: Binding(
+                get: { appState.useBackgroundImage },
+                set: { appState.updateBackgroundImageEnabled($0) }
+            )) {
+                Text("启用背景图片")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(textPrimary)
+            }
+            .toggleStyle(.switch)
             }
             .padding(18)
             .frame(width: 340)
@@ -358,7 +372,7 @@ struct ContentView: View {
         .buttonStyle(.plain)
         // 关键流程：关闭键盘焦点环，避免出现绿色方框边。
         .focusable(false)
-        .help("看看\(title)")
+        .hoverTooltip("看看\(title)")
     }
 
     private func roundIconButton(systemName: String, accessibility: String, action: @escaping () -> Void) -> some View {
@@ -374,7 +388,7 @@ struct ContentView: View {
         .buttonStyle(.plain)
         .focusable(false)
         .accessibilityLabel(accessibility)
-        .help(accessibility)
+        .hoverTooltip(accessibility)
     }
 
     private func bottomIconButton(systemName: String, help: String, action: @escaping () -> Void) -> some View {
@@ -389,7 +403,7 @@ struct ContentView: View {
         }
         .buttonStyle(.plain)
         .focusable(false)
-        .help(help)
+        .hoverTooltip(help)
     }
 
     private func presetRow(
@@ -424,7 +438,7 @@ struct ContentView: View {
                     }
                     .buttonStyle(.plain)
                     .focusable(false)
-                    .help("\(value)\(unit)")
+                    .hoverTooltip("\(value)\(unit)")
                 }
             }
         }

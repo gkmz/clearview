@@ -30,18 +30,22 @@ final class AppState: ObservableObject {
     @Published var breakDurationSeconds: Int = 20
     @Published var secondsUntilBreak: Int = 20 * 60
     @Published var filterLevel: BlueLightLevel = .off
+    @Published var useBackgroundImage = true
     @Published var statusText: String = "陪你护眼"
     @Published var reminderPhase: ReminderPhase = .none
     @Published var breakSecondsLeft: Int = 20
 
     let reminderService = ReminderService()
     let blueLightService = BlueLightFilterService()
+    private let settingsStore = AppSettingsStore()
     private let preparationSeconds = 5
     private var breakCountdownTimer: Timer?
     private var mainPanel: MainPanelController?
     private var reminderPanel: ReminderPanelController?
 
     init() {
+        loadSettings()
+
         reminderService.onTick = { [weak self] secondsLeft in
             guard let self else { return }
             Task { @MainActor in
@@ -56,7 +60,11 @@ final class AppState: ObservableObject {
             }
         }
 
-        reminderService.start(intervalMinutes: workIntervalMinutes)
+        if reminderEnabled {
+            reminderService.start(intervalMinutes: workIntervalMinutes)
+        } else {
+            reminderService.stop()
+        }
         mainPanel = MainPanelController(appState: self)
         reminderPanel = ReminderPanelController(appState: self)
     }
@@ -69,6 +77,10 @@ final class AppState: ObservableObject {
         mainPanel?.toggle()
     }
 
+    func hideMainPanel() {
+        mainPanel?.hide()
+    }
+
     func toggleReminder(_ enabled: Bool) {
         reminderEnabled = enabled
         if enabled {
@@ -78,6 +90,7 @@ final class AppState: ObservableObject {
             reminderService.stop()
             statusText = "先不打扰"
         }
+        persistSettings()
     }
 
     func updateInterval(_ minutes: Int) {
@@ -86,18 +99,21 @@ final class AppState: ObservableObject {
             reminderService.start(intervalMinutes: workIntervalMinutes)
             statusText = "节奏已调整"
         }
+        persistSettings()
     }
 
     func updateBreakDuration(_ seconds: Int) {
         breakDurationSeconds = max(5, seconds)
         breakSecondsLeft = breakDurationSeconds
         statusText = "休息时间已调整"
+        persistSettings()
     }
 
     func resetReminderTimer() {
         reminderEnabled = false
         reminderService.reset(intervalMinutes: workIntervalMinutes)
         statusText = "重新开始"
+        persistSettings()
     }
 
     func applyFilter(_ level: BlueLightLevel) {
@@ -105,6 +121,13 @@ final class AppState: ObservableObject {
         // 关键流程：蓝光档位切换时立即应用到所有可用显示器。
         blueLightService.apply(level: level)
         statusText = "护眼：\(level.title)"
+        persistSettings()
+    }
+
+    func updateBackgroundImageEnabled(_ enabled: Bool) {
+        useBackgroundImage = enabled
+        statusText = enabled ? "背景图片已启用" : "背景图片已关闭"
+        persistSettings()
     }
 
     func triggerTestReminderNow() {
@@ -167,6 +190,7 @@ final class AppState: ObservableObject {
                     self.reminderPhase = .resting
                     self.breakSecondsLeft = self.breakDurationSeconds
                     self.statusText = "看看远方吧"
+                    self.reminderPanel?.refresh()
                     self.breakCountdownTimer?.invalidate()
                     self.breakCountdownTimer = nil
                     self.startBreakCountdown()
@@ -190,6 +214,7 @@ final class AppState: ObservableObject {
                     self.reminderPhase = .completed
                     self.breakSecondsLeft = 0
                     self.statusText = "休息好了"
+                    self.reminderPanel?.refresh()
                     // 关键流程：用户可能正在看远方，结束时用短促声音温柔提醒可以回来了。
                     self.playBreakFinishedSound()
                     self.breakCountdownTimer?.invalidate()
@@ -213,12 +238,40 @@ final class AppState: ObservableObject {
     private func playBreakFinishedSound() {
         NSSound(named: "Glass")?.play()
     }
+
+    private func loadSettings() {
+        let settings = settingsStore.load()
+        reminderEnabled = settings.reminderEnabled
+        workIntervalMinutes = max(1, settings.workIntervalMinutes)
+        breakDurationSeconds = max(5, settings.breakDurationSeconds)
+        filterLevel = BlueLightLevel.fromSettingsKey(settings.filterLevelKey)
+        useBackgroundImage = settings.useBackgroundImage
+
+        // 关键流程：应用启动时恢复倒计时基础值，避免界面显示与配置不一致。
+        secondsUntilBreak = workIntervalMinutes * 60
+        breakSecondsLeft = breakDurationSeconds
+
+        // 关键流程：启动时恢复上次蓝光档位，让视觉状态连续。
+        blueLightService.apply(level: filterLevel)
+    }
+
+    private func persistSettings() {
+        let settings = AppSettings(
+            reminderEnabled: reminderEnabled,
+            workIntervalMinutes: workIntervalMinutes,
+            breakDurationSeconds: breakDurationSeconds,
+            filterLevelKey: filterLevel.settingsKey,
+            useBackgroundImage: useBackgroundImage
+        )
+        settingsStore.save(settings)
+    }
 }
 
 @MainActor
 final class ReminderPanelController {
     private weak var appState: AppState?
     private var panel: NSPanel?
+    private let panelSize = NSSize(width: 560, height: 300)
 
     init(appState: AppState) {
         self.appState = appState
@@ -227,21 +280,13 @@ final class ReminderPanelController {
     func show() {
         guard let appState else { return }
         if panel == nil {
-            let root = ReminderFloatingView()
-                .environmentObject(appState)
-                .frame(width: 420, height: 210)
-
-            let hostingView = NSHostingView(rootView: root)
-            hostingView.wantsLayer = true
-            hostingView.layer?.backgroundColor = NSColor.clear.cgColor
-
             let newPanel = ReminderPanel(
-                contentRect: NSRect(x: 0, y: 0, width: 420, height: 210),
+                contentRect: NSRect(origin: .zero, size: panelSize),
                 styleMask: [.borderless, .nonactivatingPanel],
                 backing: .buffered,
                 defer: false
             )
-            newPanel.contentView = hostingView
+            newPanel.contentView = makeHostingView(appState: appState)
             newPanel.isOpaque = false
             newPanel.backgroundColor = .clear
             newPanel.hasShadow = true
@@ -253,6 +298,8 @@ final class ReminderPanelController {
             newPanel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
             newPanel.isReleasedWhenClosed = false
             panel = newPanel
+        } else {
+            refresh()
         }
 
         positionAtTopCenter()
@@ -261,8 +308,30 @@ final class ReminderPanelController {
         panel?.makeKey()
     }
 
+    func refresh() {
+        guard let appState, let panel else { return }
+        // 关键流程：透明 NSPanel 复用同一个 SwiftUI 图层时，阶段切换可能留下上一帧残影。
+        // 这里直接重建 HostingView，让 AppKit 清空透明缓冲区后再绘制当前状态。
+        panel.contentView = makeHostingView(appState: appState)
+        panel.contentView?.needsDisplay = true
+        panel.displayIfNeeded()
+        panel.invalidateShadow()
+    }
+
     func hide() {
         panel?.orderOut(nil)
+    }
+
+    private func makeHostingView(appState: AppState) -> NSView {
+        let root = ReminderFloatingView()
+            .environmentObject(appState)
+            .frame(width: panelSize.width, height: panelSize.height)
+
+        let hostingView = NSHostingView(rootView: root)
+        hostingView.wantsLayer = true
+        hostingView.layer?.isOpaque = false
+        hostingView.layer?.backgroundColor = NSColor.clear.cgColor
+        return hostingView
     }
 
     private func positionAtTopCenter() {
@@ -272,11 +341,11 @@ final class ReminderPanelController {
             ?? NSScreen.main
             ?? NSScreen.screens.first
         guard let visibleFrame = screen?.visibleFrame else { return }
-        let width: CGFloat = 420
-        let height: CGFloat = 210
+        let width = panelSize.width
+        let height = panelSize.height
         let x = visibleFrame.midX - width / 2
-        // 关键流程：提示窗顶部留出约 80px，不贴菜单栏，减少压迫感。
-        let y = visibleFrame.maxY - height - 80
+        // 关键流程：放大后的提示窗仍保持顶部居中，并留出呼吸空间避免贴近菜单栏。
+        let y = visibleFrame.maxY - height - 90
         panel.setFrame(NSRect(x: x, y: y, width: width, height: height), display: true)
     }
 }

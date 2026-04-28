@@ -30,10 +30,14 @@ final class MainPanelController {
 
     func toggle() {
         if panel?.isVisible == true {
-            panel?.orderOut(nil)
+            hide()
         } else {
             show()
         }
+    }
+
+    func hide() {
+        panel?.orderOut(nil)
     }
 
     private func makePanel(appState: AppState) -> NSPanel {

@@ -1,0 +1,68 @@
+import Foundation
+
+struct AppSettings: Codable {
+    var reminderEnabled: Bool
+    var workIntervalMinutes: Int
+    var breakDurationSeconds: Int
+    var filterLevelKey: String
+    var useBackgroundImage: Bool
+
+    static let `default` = AppSettings(
+        reminderEnabled: true,
+        workIntervalMinutes: 20,
+        breakDurationSeconds: 20,
+        filterLevelKey: "off",
+        useBackgroundImage: true
+    )
+}
+
+final class AppSettingsStore {
+    private let defaults: UserDefaults
+    private let key = "clearview.app.settings.v1"
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+    }
+
+    func load() -> AppSettings {
+        guard let data = defaults.data(forKey: key) else {
+            return .default
+        }
+
+        do {
+            return try JSONDecoder().decode(AppSettings.self, from: data)
+        } catch {
+            // 关键流程：配置损坏时回退默认值，避免影响应用启动。
+            return .default
+        }
+    }
+
+    func save(_ settings: AppSettings) {
+        do {
+            let data = try JSONEncoder().encode(settings)
+            defaults.set(data, forKey: key)
+        } catch {
+            // 关键流程：写入失败时不打断主流程，保持当前内存状态可继续使用。
+        }
+    }
+}
+
+extension BlueLightLevel {
+    var settingsKey: String {
+        switch self {
+        case .off: return "off"
+        case .light: return "light"
+        case .medium: return "medium"
+        case .night: return "night"
+        }
+    }
+
+    static func fromSettingsKey(_ key: String) -> BlueLightLevel {
+        switch key {
+        case "light": return .light
+        case "medium": return .medium
+        case "night": return .night
+        default: return .off
+        }
+    }
+}
