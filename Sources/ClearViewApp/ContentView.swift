@@ -7,6 +7,8 @@ struct ContentView: View {
     @State private var page: Page = .timer
     @State private var showSettings = false
     @State private var now = Date()
+    @State private var isRecordingShortcut = false
+    @State private var shortcutRecordMonitor: Any?
 
     private enum Page {
         case timer
@@ -271,11 +273,10 @@ struct ContentView: View {
 
     private var globalBottomActions: some View {
         HStack(spacing: 12) {
-            // 关键流程：护眼页也显示设置和测试图标，但禁用点击，保持布局稳定。
+            // 关键流程：设置入口全局可用，快捷键配置不依赖当前页签。
             bottomIconButton(
                 systemName: "gearshape",
-                help: page == .timer ? "调整节奏" : "护眼页暂不可用",
-                isDisabled: page != .timer
+                help: "调整节奏"
             ) {
                 withAnimation(.easeInOut(duration: 0.18)) {
                     showSettings.toggle()
@@ -358,6 +359,8 @@ struct ContentView: View {
                     )
                 )
             }
+
+            shortcutSettingCard
 
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
@@ -442,6 +445,7 @@ struct ContentView: View {
                 appState.setMainPanelMovableByBackground(false)
             }
             .onDisappear {
+                stopShortcutRecording()
                 appState.setMainPanelMovableByBackground(true)
             }
         }
@@ -469,19 +473,75 @@ struct ContentView: View {
     }
 
     private func settingToggleCard(title: String, isOn: Binding<Bool>) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        HStack(spacing: 8) {
             Text(title)
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(textPrimary)
+            Spacer()
 
             Toggle("", isOn: isOn)
                 .toggleStyle(.switch)
                 .labelsHidden()
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity)
         .padding(10)
         .background(Color.white.opacity(0.08))
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    private var shortcutSettingCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("打开主界面快捷键")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(textPrimary)
+                Spacer()
+                StableText(appState.shortcutDisplayString, size: 12, weight: .semibold, alpha: 0.94)
+                    .frame(width: 84, height: 18)
+            }
+
+            Button {
+                startShortcutRecording()
+            } label: {
+                StableText(
+                    isRecordingShortcut ? "请按下新快捷键..." : "录制快捷键",
+                    size: 12,
+                    weight: .semibold,
+                    alpha: 0.94
+                )
+                .frame(maxWidth: .infinity, minHeight: 28)
+            }
+            .buttonStyle(.plain)
+            .focusable(false)
+            .background(Color.white.opacity(0.10))
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        }
+        .padding(10)
+        .background(Color.white.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    private func startShortcutRecording() {
+        stopShortcutRecording()
+        isRecordingShortcut = true
+        shortcutRecordMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            guard isRecordingShortcut else { return event }
+            let flags = event.modifierFlags.intersection([.command, .shift, .option, .control])
+            guard !flags.isEmpty else {
+                return nil
+            }
+            appState.updateShortcut(keyCode: event.keyCode, modifierFlagsRaw: flags.rawValue)
+            stopShortcutRecording()
+            return nil
+        }
+    }
+
+    private func stopShortcutRecording() {
+        isRecordingShortcut = false
+        if let shortcutRecordMonitor {
+            NSEvent.removeMonitor(shortcutRecordMonitor)
+            self.shortcutRecordMonitor = nil
+        }
     }
 
     private func tabButton(title: String, page target: Page) -> some View {

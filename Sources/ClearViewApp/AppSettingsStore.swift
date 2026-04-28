@@ -7,6 +7,8 @@ struct AppSettings: Codable {
     var filterLevelKey: String
     var useBackgroundImage: Bool
     var playBreakFinishedSound: Bool
+    var shortcutKeyCode: UInt16
+    var shortcutModifierFlagsRaw: UInt
     var mainWindowOpacity: Double
     var reminderWindowOpacity: Double
 
@@ -17,6 +19,9 @@ struct AppSettings: Codable {
         filterLevelKey: "off",
         useBackgroundImage: false,
         playBreakFinishedSound: false,
+        // 关键流程：默认快捷键使用 Command + Shift + Space，便于单手快速唤起主界面。
+        shortcutKeyCode: 49,
+        shortcutModifierFlagsRaw: 1_179_648,
         mainWindowOpacity: 0.80,
         reminderWindowOpacity: 0.78
     )

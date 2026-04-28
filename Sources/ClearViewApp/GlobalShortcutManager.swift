@@ -1,0 +1,142 @@
+import AppKit
+import Carbon.HIToolbox
+
+final class GlobalShortcutManager {
+    static let shared = GlobalShortcutManager()
+
+    private var keyCode: UInt16 = 49
+    private var modifierFlags: NSEvent.ModifierFlags = [.command, .shift]
+    private var onTrigger: (() -> Void)?
+    private var eventHandlerRef: EventHandlerRef?
+    private var hotKeyRef: EventHotKeyRef?
+    private let hotKeyID = EventHotKeyID(signature: OSType(0x43564B59), id: 1) // "CVKY"
+
+    private init() {
+        installHotKeyHandler()
+    }
+
+    deinit {
+        unregisterHotKey()
+        if let eventHandlerRef {
+            RemoveEventHandler(eventHandlerRef)
+        }
+    }
+
+    @discardableResult
+    func configure(
+        keyCode: UInt16,
+        modifierFlagsRaw: UInt,
+        onTrigger: @escaping () -> Void
+    ) -> Bool {
+        self.keyCode = keyCode
+        self.modifierFlags = normalized(NSEvent.ModifierFlags(rawValue: modifierFlagsRaw))
+        self.onTrigger = onTrigger
+        return registerHotKey()
+    }
+
+    @discardableResult
+    func updateShortcut(keyCode: UInt16, modifierFlagsRaw: UInt) -> Bool {
+        self.keyCode = keyCode
+        self.modifierFlags = normalized(NSEvent.ModifierFlags(rawValue: modifierFlagsRaw))
+        return registerHotKey()
+    }
+
+    func shortcutDisplayString(keyCode: UInt16, modifierFlagsRaw: UInt) -> String {
+        let flags = normalized(NSEvent.ModifierFlags(rawValue: modifierFlagsRaw))
+        var parts: [String] = []
+        if flags.contains(.command) { parts.append("⌘") }
+        if flags.contains(.shift) { parts.append("⇧") }
+        if flags.contains(.option) { parts.append("⌥") }
+        if flags.contains(.control) { parts.append("⌃") }
+        parts.append(keyName(for: keyCode))
+        return parts.joined(separator: "")
+    }
+
+    private func installHotKeyHandler() {
+        var eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
+        let status = InstallEventHandler(
+            GetEventDispatcherTarget(),
+            { _, eventRef, userData in
+                guard
+                    let eventRef,
+                    let userData
+                else {
+                    return noErr
+                }
+                let manager = Unmanaged<GlobalShortcutManager>.fromOpaque(userData).takeUnretainedValue()
+                manager.handleHotKey(eventRef: eventRef)
+                return noErr
+            },
+            1,
+            &eventType,
+            UnsafeMutableRawPointer(Unmanaged.passUnretained(self).toOpaque()),
+            &eventHandlerRef
+        )
+        if status != noErr {
+            eventHandlerRef = nil
+        }
+    }
+
+    private func handleHotKey(eventRef: EventRef) {
+        var triggeredID = EventHotKeyID()
+        let status = GetEventParameter(
+            eventRef,
+            EventParamName(kEventParamDirectObject),
+            EventParamType(typeEventHotKeyID),
+            nil,
+            MemoryLayout<EventHotKeyID>.size,
+            nil,
+            &triggeredID
+        )
+        guard status == noErr else { return }
+        guard triggeredID.signature == hotKeyID.signature, triggeredID.id == hotKeyID.id else { return }
+        onTrigger?()
+    }
+
+    private func registerHotKey() -> Bool {
+        unregisterHotKey()
+        var registeredRef: EventHotKeyRef?
+        let status = RegisterEventHotKey(
+            UInt32(keyCode),
+            carbonModifiers(from: modifierFlags),
+            hotKeyID,
+            GetEventDispatcherTarget(),
+            0,
+            &registeredRef
+        )
+        hotKeyRef = registeredRef
+        return status == noErr && registeredRef != nil
+    }
+
+    private func unregisterHotKey() {
+        if let hotKeyRef {
+            UnregisterEventHotKey(hotKeyRef)
+            self.hotKeyRef = nil
+        }
+    }
+
+    private func normalized(_ flags: NSEvent.ModifierFlags) -> NSEvent.ModifierFlags {
+        flags.intersection([.command, .shift, .option, .control])
+    }
+
+    private func carbonModifiers(from flags: NSEvent.ModifierFlags) -> UInt32 {
+        var carbonFlags: UInt32 = 0
+        if flags.contains(.command) { carbonFlags |= UInt32(cmdKey) }
+        if flags.contains(.shift) { carbonFlags |= UInt32(shiftKey) }
+        if flags.contains(.option) { carbonFlags |= UInt32(optionKey) }
+        if flags.contains(.control) { carbonFlags |= UInt32(controlKey) }
+        return carbonFlags
+    }
+
+    private func keyName(for keyCode: UInt16) -> String {
+        let keyMap: [UInt16: String] = [
+            0: "A", 1: "S", 2: "D", 3: "F", 4: "H", 5: "G", 6: "Z", 7: "X", 8: "C", 9: "V",
+            11: "B", 12: "Q", 13: "W", 14: "E", 15: "R", 16: "Y", 17: "T", 18: "1", 19: "2", 20: "3",
+            21: "4", 22: "6", 23: "5", 24: "=", 25: "9", 26: "7", 27: "-", 28: "8", 29: "0",
+            30: "]", 31: "O", 32: "U", 33: "[", 34: "I", 35: "P", 36: "↩", 37: "L", 38: "J", 39: "'",
+            40: "K", 41: ";", 42: "\\", 43: ",", 44: "/", 45: "N", 46: "M", 47: ".", 48: "⇥", 49: "Space",
+            50: "`", 51: "⌫", 53: "⎋"
+        ]
+        return keyMap[keyCode] ?? "#\(keyCode)"
+    }
+}

@@ -32,6 +32,8 @@ final class AppState: ObservableObject {
     @Published var filterLevel: BlueLightLevel = .off
     @Published var useBackgroundImage = true
     @Published var playBreakFinishedSound = false
+    @Published var shortcutKeyCode: UInt16 = 49
+    @Published var shortcutModifierFlagsRaw: UInt = 1_179_648
     @Published var mainWindowOpacity: Double = 0.80
     @Published var reminderWindowOpacity: Double = 0.78
     @Published var statusText: String = "陪你护眼"
@@ -40,6 +42,7 @@ final class AppState: ObservableObject {
 
     let reminderService = ReminderService()
     let blueLightService = BlueLightFilterService()
+    private let shortcutManager = GlobalShortcutManager.shared
     private let settingsStore = AppSettingsStore()
     private let preparationSeconds = 5
     private var breakCountdownTimer: Timer?
@@ -67,6 +70,17 @@ final class AppState: ObservableObject {
             reminderService.start(intervalMinutes: workIntervalMinutes)
         } else {
             reminderService.stop()
+        }
+        let shortcutRegistered = shortcutManager.configure(
+            keyCode: shortcutKeyCode,
+            modifierFlagsRaw: shortcutModifierFlagsRaw
+        ) { [weak self] in
+            Task { @MainActor in
+                self?.showMainPanel()
+            }
+        }
+        if !shortcutRegistered {
+            statusText = "默认快捷键注册失败，请在设置中重新选择"
         }
         mainPanel = MainPanelController(appState: self)
         reminderPanel = ReminderPanelController(appState: self)
@@ -141,6 +155,34 @@ final class AppState: ObservableObject {
         playBreakFinishedSound = enabled
         statusText = enabled ? "结束提示音已启用" : "结束提示音已关闭"
         persistSettings()
+    }
+
+    func updateShortcut(keyCode: UInt16, modifierFlagsRaw: UInt) {
+        // 关键流程：快捷键至少需要一个修饰键，避免和系统输入冲突。
+        let flags = NSEvent.ModifierFlags(rawValue: modifierFlagsRaw)
+            .intersection([.command, .shift, .option, .control])
+        guard !flags.isEmpty else { return }
+        let previousKeyCode = shortcutKeyCode
+        let previousFlagsRaw = shortcutModifierFlagsRaw
+        shortcutKeyCode = keyCode
+        shortcutModifierFlagsRaw = flags.rawValue
+        let success = shortcutManager.updateShortcut(keyCode: keyCode, modifierFlagsRaw: flags.rawValue)
+        if success {
+            statusText = "快捷键已更新"
+        } else {
+            shortcutKeyCode = previousKeyCode
+            shortcutModifierFlagsRaw = previousFlagsRaw
+            _ = shortcutManager.updateShortcut(keyCode: previousKeyCode, modifierFlagsRaw: previousFlagsRaw)
+            statusText = "快捷键被系统占用，请换一组组合键"
+        }
+        persistSettings()
+    }
+
+    var shortcutDisplayString: String {
+        shortcutManager.shortcutDisplayString(
+            keyCode: shortcutKeyCode,
+            modifierFlagsRaw: shortcutModifierFlagsRaw
+        )
     }
 
     func updateMainWindowOpacity(_ value: Double) {
@@ -282,6 +324,8 @@ final class AppState: ObservableObject {
         filterLevel = BlueLightLevel.fromSettingsKey(settings.filterLevelKey)
         useBackgroundImage = settings.useBackgroundImage
         playBreakFinishedSound = settings.playBreakFinishedSound
+        shortcutKeyCode = settings.shortcutKeyCode
+        shortcutModifierFlagsRaw = settings.shortcutModifierFlagsRaw
         mainWindowOpacity = min(max(settings.mainWindowOpacity, 0.25), 1.0)
         reminderWindowOpacity = min(max(settings.reminderWindowOpacity, 0.25), 1.0)
 
@@ -301,6 +345,8 @@ final class AppState: ObservableObject {
             filterLevelKey: filterLevel.settingsKey,
             useBackgroundImage: useBackgroundImage,
             playBreakFinishedSound: playBreakFinishedSound,
+            shortcutKeyCode: shortcutKeyCode,
+            shortcutModifierFlagsRaw: shortcutModifierFlagsRaw,
             mainWindowOpacity: mainWindowOpacity,
             reminderWindowOpacity: reminderWindowOpacity
         )
