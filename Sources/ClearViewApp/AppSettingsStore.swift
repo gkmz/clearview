@@ -6,6 +6,7 @@ struct AppSettings: Codable {
     var breakDurationSeconds: Int
     var filterLevelKey: String
     var useBackgroundImage: Bool
+    var playBreakFinishedSound: Bool
     var mainWindowOpacity: Double
     var reminderWindowOpacity: Double
 
@@ -15,6 +16,7 @@ struct AppSettings: Codable {
         breakDurationSeconds: 20,
         filterLevelKey: "off",
         useBackgroundImage: false,
+        playBreakFinishedSound: false,
         mainWindowOpacity: 0.80,
         reminderWindowOpacity: 0.78
     )

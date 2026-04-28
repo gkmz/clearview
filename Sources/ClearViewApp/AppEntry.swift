@@ -31,6 +31,7 @@ final class AppState: ObservableObject {
     @Published var secondsUntilBreak: Int = 20 * 60
     @Published var filterLevel: BlueLightLevel = .off
     @Published var useBackgroundImage = true
+    @Published var playBreakFinishedSound = false
     @Published var mainWindowOpacity: Double = 0.80
     @Published var reminderWindowOpacity: Double = 0.78
     @Published var statusText: String = "陪你护眼"
@@ -136,6 +137,12 @@ final class AppState: ObservableObject {
         persistSettings()
     }
 
+    func updateBreakFinishedSoundEnabled(_ enabled: Bool) {
+        playBreakFinishedSound = enabled
+        statusText = enabled ? "结束提示音已启用" : "结束提示音已关闭"
+        persistSettings()
+    }
+
     func updateMainWindowOpacity(_ value: Double) {
         // 关键流程：限制透明度有效范围，避免极端值导致可读性崩溃。
         mainWindowOpacity = min(max(value, 0.25), 1.0)
@@ -238,8 +245,10 @@ final class AppState: ObservableObject {
                     self.breakSecondsLeft = 0
                     self.statusText = "休息好了"
                     self.reminderPanel?.refresh()
-                    // 关键流程：用户可能正在看远方，结束时用短促声音温柔提醒可以回来了。
-                    self.playBreakFinishedSound()
+                    if self.playBreakFinishedSound {
+                        // 关键流程：用户可能正在看远方，结束时可选用短促声音温柔提醒可以回来了。
+                        self.playBreakFinishedSoundEffect()
+                    }
                     self.breakCountdownTimer?.invalidate()
                     self.breakCountdownTimer = nil
                 } else {
@@ -261,7 +270,7 @@ final class AppState: ObservableObject {
         reminderPanel?.hide()
     }
 
-    private func playBreakFinishedSound() {
+    private func playBreakFinishedSoundEffect() {
         NSSound(named: "Glass")?.play()
     }
 
@@ -272,6 +281,7 @@ final class AppState: ObservableObject {
         breakDurationSeconds = max(5, settings.breakDurationSeconds)
         filterLevel = BlueLightLevel.fromSettingsKey(settings.filterLevelKey)
         useBackgroundImage = settings.useBackgroundImage
+        playBreakFinishedSound = settings.playBreakFinishedSound
         mainWindowOpacity = min(max(settings.mainWindowOpacity, 0.25), 1.0)
         reminderWindowOpacity = min(max(settings.reminderWindowOpacity, 0.25), 1.0)
 
@@ -290,6 +300,7 @@ final class AppState: ObservableObject {
             breakDurationSeconds: breakDurationSeconds,
             filterLevelKey: filterLevel.settingsKey,
             useBackgroundImage: useBackgroundImage,
+            playBreakFinishedSound: playBreakFinishedSound,
             mainWindowOpacity: mainWindowOpacity,
             reminderWindowOpacity: reminderWindowOpacity
         )

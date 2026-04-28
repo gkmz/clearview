@@ -101,7 +101,7 @@ struct ContentView: View {
         // 关键流程：允许用户关闭背景图，直接回退为纯色背景，减少干扰。
         if appState.useBackgroundImage {
             // 关键流程：SwiftPM 资源中的图片用 Bundle.module 显式读取，避免名称解析失败。
-            if let url = Bundle.module.url(forResource: isDark ? "dark-background" : "light-background", withExtension: "jpg"),
+            if let url = Bundle.module.url(forResource: isDark ? "dark" : "light", withExtension: "jpg"),
                let image = NSImage(contentsOf: url) {
                 Image(nsImage: image)
                     .resizable()
@@ -341,15 +341,23 @@ struct ContentView: View {
                 selected: appState.breakDurationSeconds
             ) { appState.updateBreakDuration($0) }
 
-            Toggle(isOn: Binding(
-                get: { appState.useBackgroundImage },
-                set: { appState.updateBackgroundImageEnabled($0) }
-            )) {
-                Text("启用背景图片")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(textPrimary)
+            HStack(spacing: 10) {
+                settingToggleCard(
+                    title: "背景图片",
+                    isOn: Binding(
+                        get: { appState.useBackgroundImage },
+                        set: { appState.updateBackgroundImageEnabled($0) }
+                    )
+                )
+
+                settingToggleCard(
+                    title: "结束提示音",
+                    isOn: Binding(
+                        get: { appState.playBreakFinishedSound },
+                        set: { appState.updateBreakFinishedSoundEnabled($0) }
+                    )
+                )
             }
-            .toggleStyle(.switch)
 
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
@@ -458,6 +466,22 @@ struct ContentView: View {
         .focusable(false)
         .disabled(isDisabled)
         .hoverTooltip(help)
+    }
+
+    private func settingToggleCard(title: String, isOn: Binding<Bool>) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(textPrimary)
+
+            Toggle("", isOn: isOn)
+                .toggleStyle(.switch)
+                .labelsHidden()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(10)
+        .background(Color.white.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     private func tabButton(title: String, page target: Page) -> some View {
