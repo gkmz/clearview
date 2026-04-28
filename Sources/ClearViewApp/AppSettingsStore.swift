@@ -14,7 +14,7 @@ struct AppSettings: Codable {
         workIntervalMinutes: 20,
         breakDurationSeconds: 20,
         filterLevelKey: "off",
-        useBackgroundImage: true,
+        useBackgroundImage: false,
         mainWindowOpacity: 0.80,
         reminderWindowOpacity: 0.78
     )
