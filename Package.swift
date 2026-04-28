@@ -12,7 +12,10 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "ClearViewApp",
-            path: "Sources/ClearViewApp"
+            path: "Sources/ClearViewApp",
+            resources: [
+                .process("Resources")
+            ]
         )
     ]
 )

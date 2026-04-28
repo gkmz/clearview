@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct ContentView: View {
@@ -5,6 +6,7 @@ struct ContentView: View {
     @Environment(\.colorScheme) private var colorScheme
     @State private var page: Page = .timer
     @State private var showSettings = false
+    @State private var now = Date()
 
     private enum Page {
         case timer
@@ -13,63 +15,148 @@ struct ContentView: View {
 
     // 关键流程：统一四个区域的尺寸比例，避免页面切换时布局抖动。
     private enum Layout {
-        static let cardPadding: CGFloat = 14
-        static let sectionSpacing: CGFloat = 6
-        static let topTabHeight: CGFloat = 48
-        static let displayHeight: CGFloat = 88
-        static let functionHeight: CGFloat = 62
-        static let systemHeight: CGFloat = 42
+        static let timerCardWidth: CGFloat = 480
+        static let timerCardHeight: CGFloat = 280
+        static let cardPadding: CGFloat = 22
+        static let sectionSpacing: CGFloat = 10
+        static let topTabHeight: CGFloat = 44
+        static let displayHeight: CGFloat = 86
+        static let functionHeight: CGFloat = 58
+        static let systemHeight: CGFloat = 38
     }
 
     // 关键流程：根据系统深浅色自动切换背景、文字、按钮层级。
     private var isDark: Bool { colorScheme == .dark }
-    private var textPrimary: Color { isDark ? Color.white.opacity(0.97) : Color(red: 0.04, green: 0.20, blue: 0.12) }
-    private var textSecondary: Color { isDark ? Color.white.opacity(0.86) : Color(red: 0.27, green: 0.39, blue: 0.32) }
-    private var selectedFill: Color { isDark ? Color.white.opacity(0.24) : Color(red: 0.86, green: 0.92, blue: 0.87).opacity(0.96) }
-    private var panelTint: Color { isDark ? Color.white.opacity(0.08) : Color.white.opacity(0.72) }
-    private var buttonTint: Color { isDark ? Color.white.opacity(0.22) : Color.white.opacity(0.62) }
-    private var buttonBorder: Color { isDark ? Color.white.opacity(0.22) : Color(red: 0.72, green: 0.80, blue: 0.74).opacity(0.46) }
-    private var textShadow: Color { isDark ? Color.black.opacity(0.50) : Color.white.opacity(0.30) }
+    private var textPrimary: Color { Color.white.opacity(0.96) }
+    private var textSecondary: Color { Color.white.opacity(0.78) }
+    private var selectedFill: Color { Color.white.opacity(0.24) }
+    private var panelTint: Color { Color.black.opacity(isDark ? 0.20 : 0.16) }
+    private var buttonTint: Color { Color.white.opacity(0.20) }
+    private var buttonBorder: Color { Color.white.opacity(0.22) }
+    private var textShadow: Color { Color.black.opacity(0.55) }
 
     var body: some View {
         ZStack {
-            // 关键流程：菜单窗口外壳不可控，根视图不再额外做圆角外框，避免多重边框。
-            (isDark ? Color.black.opacity(0.35) : Color(red: 0.93, green: 0.96, blue: 0.94).opacity(0.92))
+            immersiveBackground
 
-            Circle()
-                .fill((isDark ? Color.white.opacity(0.03) : Color.white.opacity(0.06)))
-                .frame(width: 280, height: 280)
-                .blur(radius: 46)
-                .offset(x: -170, y: -88)
+            // 关键流程：沉浸式主界面只保留少量信息，降低工具感，后续可替换为真实背景图。
+            VStack(spacing: 16) {
+                clockHeader
+                    .padding(.top, 34)
 
-            Circle()
-                .fill((isDark ? Color.white.opacity(0.02) : Color(red: 0.75, green: 0.86, blue: 0.78).opacity(0.08)))
-                .frame(width: 240, height: 240)
-                .blur(radius: 54)
-                .offset(x: 180, y: 116)
+                Spacer(minLength: 6)
 
-            VStack(spacing: Layout.sectionSpacing) {
-                topTabs
-                    .frame(height: Layout.topTabHeight)
+                timerCard
 
-                pageDisplayArea
-                    .frame(maxWidth: .infinity, minHeight: Layout.displayHeight, maxHeight: Layout.displayHeight)
+                quoteFooter
+                    .padding(.top, 4)
 
-                pageFunctionArea
-                    .frame(maxWidth: .infinity, minHeight: Layout.functionHeight, maxHeight: Layout.functionHeight)
-
-                bottomActions
-                    .frame(maxWidth: .infinity, minHeight: Layout.systemHeight, maxHeight: Layout.systemHeight)
+                Spacer(minLength: 26)
             }
-            .padding(Layout.cardPadding)
+            .padding(.horizontal, 40)
 
             if showSettings {
                 settingsModal
                     .transition(.opacity.combined(with: .scale(scale: 0.96)))
             }
         }
-        .frame(minWidth: 480, minHeight: 320)
+        .frame(minWidth: 920, minHeight: 540)
         .animation(.easeInOut(duration: 0.18), value: showSettings)
+        .onReceive(Timer.publish(every: 30, on: .main, in: .common).autoconnect()) { value in
+            now = value
+        }
+    }
+
+    private var immersiveBackground: some View {
+        GeometryReader { proxy in
+            ZStack {
+                backgroundImage
+                    .frame(width: proxy.size.width, height: proxy.size.height)
+                    .clipped()
+
+                // 关键流程：背景图只是氛围层，遮罩负责保证白色文字始终清晰。
+                Color.black.opacity(isDark ? 0.42 : 0.34)
+
+                LinearGradient(
+                    colors: [
+                        Color.black.opacity(isDark ? 0.26 : 0.18),
+                        Color.black.opacity(0.06),
+                        Color.black.opacity(isDark ? 0.34 : 0.24)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            }
+        }
+        .ignoresSafeArea()
+    }
+
+    @ViewBuilder
+    private var backgroundImage: some View {
+        // 关键流程：SwiftPM 资源中的图片用 Bundle.module 显式读取，避免名称解析失败。
+        if let url = Bundle.module.url(forResource: isDark ? "dark-background" : "light-background", withExtension: "jpg"),
+           let image = NSImage(contentsOf: url) {
+            Image(nsImage: image)
+                .resizable()
+                .scaledToFill()
+        } else {
+            (isDark ? Color.black : Color(red: 0.93, green: 0.96, blue: 0.94))
+        }
+    }
+
+    private var clockHeader: some View {
+        VStack(spacing: 8) {
+            Text(formatTime(now))
+                .font(.system(size: 56, weight: .light, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(textPrimary)
+                .shadow(color: textShadow, radius: 8, x: 0, y: 3)
+
+            Text(formatDate(now))
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(textSecondary)
+
+            Text(greetingText)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(textPrimary)
+                .padding(.top, 6)
+        }
+    }
+
+    private var timerCard: some View {
+        VStack(spacing: Layout.sectionSpacing) {
+            topTabs
+                .frame(height: Layout.topTabHeight)
+
+            pageDisplayArea
+                .frame(maxWidth: .infinity, minHeight: Layout.displayHeight, maxHeight: Layout.displayHeight)
+
+            pageFunctionArea
+                .frame(maxWidth: .infinity, minHeight: Layout.functionHeight, maxHeight: Layout.functionHeight)
+
+            bottomActions
+                .frame(maxWidth: .infinity, minHeight: Layout.systemHeight, maxHeight: Layout.systemHeight)
+        }
+        .padding(Layout.cardPadding)
+        .frame(width: Layout.timerCardWidth, height: Layout.timerCardHeight)
+        .background(Color.black.opacity(isDark ? 0.20 : 0.16))
+        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+        )
+    }
+
+    private var quoteFooter: some View {
+        VStack(spacing: 6) {
+            Text("慢慢眨眼，看看远方，给视力一点缓冲。")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(textPrimary.opacity(0.88))
+
+            Text("ClearView")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(textSecondary.opacity(0.78))
+        }
     }
 
     private var topTabs: some View {
@@ -78,11 +165,11 @@ struct ContentView: View {
             tabButton(title: "护眼", page: .filter)
         }
         .padding(6)
-        .background(isDark ? AnyShapeStyle(.ultraThinMaterial) : AnyShapeStyle(Color.clear))
-        .background(isDark ? Color.white.opacity(0.05) : panelTint)
+        .background(.ultraThinMaterial)
+        .background(panelTint)
         .overlay(
             Capsule()
-                .stroke(isDark ? Color.white.opacity(0.13) : Color(red: 0.72, green: 0.80, blue: 0.74).opacity(0.36), lineWidth: 1)
+                .stroke(Color.white.opacity(0.18), lineWidth: 1)
         )
         .clipShape(Capsule())
         .shadow(color: .black.opacity(isDark ? 0.34 : 0.10), radius: 14, x: 0, y: 7)
@@ -373,6 +460,35 @@ struct ContentView: View {
         let m = seconds / 60
         let s = seconds % 60
         return String(format: "%02d:%02d", m, s)
+    }
+
+    private func formatTime(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        return formatter.string(from: date)
+    }
+
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "zh_Hans_CN")
+        formatter.dateFormat = "M月d日 EEEE"
+        return formatter.string(from: date)
+    }
+
+    private var greetingText: String {
+        let hour = Calendar.current.component(.hour, from: now)
+        switch hour {
+        case 5..<11:
+            return "早上好，记得照顾眼睛"
+        case 11..<14:
+            return "中午好，给眼睛一点空隙"
+        case 14..<18:
+            return "下午好，别忘了看远方"
+        case 18..<23:
+            return "晚上好，屏幕可以柔和一点"
+        default:
+            return "夜深了，让眼睛慢慢休息"
+        }
     }
 }
 

@@ -5,12 +5,12 @@ struct ReminderFloatingView: View {
     @Environment(\.colorScheme) private var colorScheme
 
     private var isDark: Bool { colorScheme == .dark }
-    private var textPrimary: Color { isDark ? Color.white.opacity(0.92) : Color(red: 0.04, green: 0.20, blue: 0.12) }
-    private var textSecondary: Color { isDark ? Color.white.opacity(0.70) : Color(red: 0.27, green: 0.39, blue: 0.32).opacity(0.82) }
-    private var panelFill: Color { isDark ? Color.black.opacity(0.62) : Color.white.opacity(0.78) }
-    private var panelBorder: Color { isDark ? Color.white.opacity(0.20) : Color(red: 0.72, green: 0.80, blue: 0.74).opacity(0.38) }
-    private var buttonFill: Color { isDark ? Color.white.opacity(0.14) : Color.white.opacity(0.62) }
-    private var buttonBorder: Color { isDark ? Color.white.opacity(0.20) : Color(red: 0.72, green: 0.80, blue: 0.74).opacity(0.42) }
+    private var textPrimary: Color { Color.white.opacity(0.94) }
+    private var textSecondary: Color { Color.white.opacity(0.72) }
+    private var panelFill: Color { Color.black.opacity(isDark ? 0.46 : 0.42) }
+    private var panelBorder: Color { Color.white.opacity(isDark ? 0.16 : 0.18) }
+    private var buttonFill: Color { Color.white.opacity(isDark ? 0.12 : 0.14) }
+    private var buttonBorder: Color { Color.white.opacity(isDark ? 0.18 : 0.20) }
 
     var body: some View {
         VStack(spacing: 10) {
@@ -22,7 +22,7 @@ struct ReminderFloatingView: View {
                 .font(.system(size: 52, weight: .bold, design: .rounded))
                 .monospacedDigit()
                 .foregroundStyle(textPrimary)
-                .shadow(color: isDark ? Color.black.opacity(0.18) : Color.white.opacity(0.36), radius: 6, x: 0, y: 3)
+                .shadow(color: isDark ? Color.black.opacity(0.24) : Color.white.opacity(0.30), radius: 6, x: 0, y: 3)
 
             HStack(spacing: 16) {
                 if appState.reminderPhase != .completed {
@@ -44,7 +44,7 @@ struct ReminderFloatingView: View {
         .padding(.horizontal, 24)
         .padding(.vertical, 16)
         .frame(width: 420, height: 210)
-        // 关键流程：提示窗背景使用明确的半透明色，不叠加 material，避免系统毛玻璃让透明度看起来失效。
+        // 关键流程：浅色使用浅灰透明卡片，深色提高透明度，保持高级感和可读性。
         .background(
             RoundedRectangle(cornerRadius: 24)
                 .fill(panelFill)
@@ -54,7 +54,22 @@ struct ReminderFloatingView: View {
             RoundedRectangle(cornerRadius: 24)
                 .stroke(panelBorder, lineWidth: 1)
         )
-        .shadow(color: .black.opacity(0.20), radius: 20, x: 0, y: 12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 24)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(isDark ? 0.05 : 0.16),
+                            Color.clear,
+                            Color.black.opacity(isDark ? 0.10 : 0.04)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .allowsHitTesting(false)
+        )
+        .shadow(color: .black.opacity(isDark ? 0.28 : 0.18), radius: 24, x: 0, y: 14)
     }
 
     private var titleText: String {

@@ -7,44 +7,13 @@ struct ClearViewApp: App {
     @StateObject private var appState = AppState()
 
     var body: some Scene {
-        // 关键流程：提供主窗口，确保首次运行时用户能直接看到界面。
-        WindowGroup("ClearView") {
-            ContentView()
-                .environmentObject(appState)
-                .background(WindowChromeConfigurator())
-                .frame(minWidth: 480, minHeight: 320)
-        }
-
         MenuBarExtra {
-            ContentView()
+            MenuBarView()
                 .environmentObject(appState)
-                .frame(width: 480, height: 320)
         } label: {
             Label("ClearView", systemImage: "eye")
         }
-        .menuBarExtraStyle(.window)
     }
-}
-
-struct WindowChromeConfigurator: NSViewRepresentable {
-    func makeNSView(context: Context) -> NSView {
-        let view = NSView()
-        DispatchQueue.main.async {
-            guard let window = view.window else { return }
-            // 关键流程：让主窗口本身透明，圆角由 SwiftUI 内容层负责绘制。
-            window.isOpaque = false
-            window.backgroundColor = .clear
-            window.titleVisibility = .hidden
-            window.titlebarAppearsTransparent = true
-            window.styleMask.insert(.fullSizeContentView)
-            window.standardWindowButton(.closeButton)?.isHidden = true
-            window.standardWindowButton(.miniaturizeButton)?.isHidden = true
-            window.standardWindowButton(.zoomButton)?.isHidden = true
-        }
-        return view
-    }
-
-    func updateNSView(_ nsView: NSView, context: Context) {}
 }
 
 @MainActor
@@ -69,6 +38,7 @@ final class AppState: ObservableObject {
     let blueLightService = BlueLightFilterService()
     private let preparationSeconds = 5
     private var breakCountdownTimer: Timer?
+    private var mainPanel: MainPanelController?
     private var reminderPanel: ReminderPanelController?
 
     init() {
@@ -87,7 +57,16 @@ final class AppState: ObservableObject {
         }
 
         reminderService.start(intervalMinutes: workIntervalMinutes)
+        mainPanel = MainPanelController(appState: self)
         reminderPanel = ReminderPanelController(appState: self)
+    }
+
+    func showMainPanel() {
+        mainPanel?.show()
+    }
+
+    func toggleMainPanel() {
+        mainPanel?.toggle()
     }
 
     func toggleReminder(_ enabled: Bool) {
@@ -211,6 +190,8 @@ final class AppState: ObservableObject {
                     self.reminderPhase = .completed
                     self.breakSecondsLeft = 0
                     self.statusText = "休息好了"
+                    // 关键流程：用户可能正在看远方，结束时用短促声音温柔提醒可以回来了。
+                    self.playBreakFinishedSound()
                     self.breakCountdownTimer?.invalidate()
                     self.breakCountdownTimer = nil
                 }
@@ -227,6 +208,10 @@ final class AppState: ObservableObject {
         breakCountdownTimer?.invalidate()
         breakCountdownTimer = nil
         reminderPanel?.hide()
+    }
+
+    private func playBreakFinishedSound() {
+        NSSound(named: "Glass")?.play()
     }
 }
 
@@ -263,6 +248,7 @@ final class ReminderPanelController {
             newPanel.level = .statusBar
             newPanel.hidesOnDeactivate = false
             newPanel.ignoresMouseEvents = false
+            newPanel.isMovableByWindowBackground = true
             // 关键流程：提醒浮窗需要跨桌面显示；canJoinAllSpaces 与 moveToActiveSpace 互斥，不能同时设置。
             newPanel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
             newPanel.isReleasedWhenClosed = false
