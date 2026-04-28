@@ -34,6 +34,7 @@ final class AppState: ObservableObject {
     @Published var playBreakFinishedSound = false
     @Published var shortcutKeyCode: UInt16 = 49
     @Published var shortcutModifierFlagsRaw: UInt = 1_179_648
+    @Published var backgroundImageOpacity: Double = 1.0
     @Published var mainWindowOpacity: Double = 0.80
     @Published var reminderWindowOpacity: Double = 0.78
     @Published var statusText: String = "陪你护眼"
@@ -192,6 +193,12 @@ final class AppState: ObservableObject {
         persistSettings()
     }
 
+    func updateBackgroundImageOpacity(_ value: Double) {
+        backgroundImageOpacity = min(max(value, 0.25), 1.0)
+        statusText = "背景图透明度已调整"
+        persistSettings()
+    }
+
     func updateReminderWindowOpacity(_ value: Double) {
         // 关键流程：提示窗透明度单独可调，兼顾提醒可见性与通透感。
         reminderWindowOpacity = min(max(value, 0.25), 1.0)
@@ -326,6 +333,7 @@ final class AppState: ObservableObject {
         playBreakFinishedSound = settings.playBreakFinishedSound
         shortcutKeyCode = settings.shortcutKeyCode
         shortcutModifierFlagsRaw = settings.shortcutModifierFlagsRaw
+        backgroundImageOpacity = min(max(settings.backgroundImageOpacity, 0.25), 1.0)
         mainWindowOpacity = min(max(settings.mainWindowOpacity, 0.25), 1.0)
         reminderWindowOpacity = min(max(settings.reminderWindowOpacity, 0.25), 1.0)
 
@@ -347,6 +355,7 @@ final class AppState: ObservableObject {
             playBreakFinishedSound: playBreakFinishedSound,
             shortcutKeyCode: shortcutKeyCode,
             shortcutModifierFlagsRaw: shortcutModifierFlagsRaw,
+            backgroundImageOpacity: backgroundImageOpacity,
             mainWindowOpacity: mainWindowOpacity,
             reminderWindowOpacity: reminderWindowOpacity
         )

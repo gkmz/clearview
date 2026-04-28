@@ -9,6 +9,10 @@ struct ContentView: View {
     @State private var now = Date()
     @State private var isRecordingShortcut = false
     @State private var shortcutRecordMonitor: Any?
+    @State private var isRhythmSettingsExpanded = true
+    @State private var isAppearanceSettingsExpanded = false
+    @State private var isPreferenceSettingsExpanded = false
+    @State private var settingsContentHeight: CGFloat = 0
 
     private enum Page {
         case timer
@@ -108,7 +112,7 @@ struct ContentView: View {
                 Image(nsImage: image)
                     .resizable()
                     .scaledToFill()
-                    .opacity(mainOpacity)
+                    .opacity(appState.backgroundImageOpacity)
             } else {
                 Color.black
                     .opacity(mainOpacity)
@@ -306,6 +310,13 @@ struct ContentView: View {
                     showSettings = false
                 }
 
+            GeometryReader { proxy in
+                // 关键流程：设置窗随内容增减自然伸缩，但整体高度不能超过主界面上下留白后的可用高度。
+                let verticalMargin: CGFloat = 48
+                let modalChromeHeight: CGFloat = 80
+                let maxModalHeight = max(proxy.size.height - verticalMargin * 2, 260)
+                let maxContentHeight = max(maxModalHeight - modalChromeHeight, 160)
+
             VStack(alignment: .leading, spacing: 14) {
                 HStack {
                     Text("小设置")
@@ -328,88 +339,20 @@ struct ContentView: View {
                     .hoverTooltip("收起设置")
                 }
 
-            presetRow(
-                title: "多久提醒",
-                values: [20, 25, 45, 60],
-                unit: "分钟",
-                selected: appState.workIntervalMinutes
-            ) { appState.updateInterval($0) }
-
-            presetRow(
-                title: "休息多久",
-                values: [20, 40, 60, 90],
-                unit: "秒",
-                selected: appState.breakDurationSeconds
-            ) { appState.updateBreakDuration($0) }
-
-            HStack(spacing: 10) {
-                settingToggleCard(
-                    title: "背景图片",
-                    isOn: Binding(
-                        get: { appState.useBackgroundImage },
-                        set: { appState.updateBackgroundImageEnabled($0) }
-                    )
-                )
-
-                settingToggleCard(
-                    title: "结束提示音",
-                    isOn: Binding(
-                        get: { appState.playBreakFinishedSound },
-                        set: { appState.updateBreakFinishedSoundEnabled($0) }
-                    )
-                )
-            }
-
-            shortcutSettingCard
-
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("主界面透明度")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(textPrimary)
-                    Spacer()
-                    Text("\(Int(appState.mainWindowOpacity * 100))%")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(textSecondary)
+                ScrollView(.vertical, showsIndicators: settingsContentHeight > maxContentHeight) {
+                    settingsSectionsContent
                 }
-                WhiteOpacitySlider(
-                    value: Binding(
-                        get: { appState.mainWindowOpacity },
-                        set: { appState.updateMainWindowOpacity($0) }
-                    ),
-                    range: 0.25...1.0,
-                    step: 0.01
-                )
-            }
-            .padding(10)
-            .background(Color.white.opacity(0.08))
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("提示窗透明度")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(textPrimary)
-                    Spacer()
-                    Text("\(Int(appState.reminderWindowOpacity * 100))%")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(textSecondary)
+                .frame(maxHeight: maxContentHeight)
+                // 关键流程：内容未超高时按自然高度收缩；超高时由 maxHeight 截断并启用滚动。
+                .fixedSize(horizontal: false, vertical: true)
+                .onPreferenceChange(SettingsContentHeightKey.self) { height in
+                    settingsContentHeight = height
                 }
-                WhiteOpacitySlider(
-                    value: Binding(
-                        get: { appState.reminderWindowOpacity },
-                        set: { appState.updateReminderWindowOpacity($0) }
-                    ),
-                    range: 0.25...1.0,
-                    step: 0.01
-                )
-            }
-            .padding(10)
-            .background(Color.white.opacity(0.08))
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
             .padding(18)
             .frame(width: 340)
+            .frame(maxHeight: maxModalHeight)
+            .fixedSize(horizontal: false, vertical: true)
             .background(Color.black.opacity(0.62))
             .clipShape(RoundedRectangle(cornerRadius: 24))
             .overlay(
@@ -448,7 +391,87 @@ struct ContentView: View {
                 stopShortcutRecording()
                 appState.setMainPanelMovableByBackground(true)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+            }
         }
+    }
+
+    private var settingsSectionsContent: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            settingsSection(title: "节奏", isExpanded: $isRhythmSettingsExpanded) {
+                presetRow(
+                    title: "多久提醒",
+                    values: [20, 25, 45, 60],
+                    unit: "分钟",
+                    selected: appState.workIntervalMinutes
+                ) { appState.updateInterval($0) }
+
+                presetRow(
+                    title: "舒眼多久",
+                    values: [20, 40, 60, 90],
+                    unit: "秒",
+                    selected: appState.breakDurationSeconds
+                ) { appState.updateBreakDuration($0) }
+            }
+
+            settingsSection(title: "外观", isExpanded: $isAppearanceSettingsExpanded) {
+                HStack(spacing: 10) {
+                    settingToggleCard(
+                        title: "背景图片",
+                        isOn: Binding(
+                            get: { appState.useBackgroundImage },
+                            set: { appState.updateBackgroundImageEnabled($0) }
+                        )
+                    )
+                }
+
+                if appState.useBackgroundImage {
+                    opacitySettingRow(
+                        title: "背景图透明度",
+                        value: Binding(
+                            get: { appState.backgroundImageOpacity },
+                            set: { appState.updateBackgroundImageOpacity($0) }
+                        )
+                    )
+                }
+
+                opacitySettingRow(
+                    title: "主界面透明度",
+                    value: Binding(
+                        get: { appState.mainWindowOpacity },
+                        set: { appState.updateMainWindowOpacity($0) }
+                    )
+                )
+
+                opacitySettingRow(
+                    title: "提示窗透明度",
+                    value: Binding(
+                        get: { appState.reminderWindowOpacity },
+                        set: { appState.updateReminderWindowOpacity($0) }
+                    )
+                )
+            }
+
+            settingsSection(title: "偏好", isExpanded: $isPreferenceSettingsExpanded) {
+                HStack(spacing: 10) {
+                    settingToggleCard(
+                        title: "结束提示音",
+                        isOn: Binding(
+                            get: { appState.playBreakFinishedSound },
+                            set: { appState.updateBreakFinishedSoundEnabled($0) }
+                        )
+                    )
+                }
+
+                shortcutSettingCard
+            }
+        }
+        .background(
+            GeometryReader { proxy in
+                Color.clear
+                    .preference(key: SettingsContentHeightKey.self, value: proxy.size.height)
+            }
+        )
     }
 
     private func bottomIconButton(
@@ -470,6 +493,62 @@ struct ContentView: View {
         .focusable(false)
         .disabled(isDisabled)
         .hoverTooltip(help)
+    }
+
+    private func settingsSection<Content: View>(
+        title: String,
+        isExpanded: Binding<Bool>,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: isExpanded.wrappedValue ? 10 : 0) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    isExpanded.wrappedValue.toggle()
+                }
+            } label: {
+                HStack {
+                    Text(title)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(textPrimary)
+                    Spacer()
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(textSecondary)
+                        .rotationEffect(.degrees(isExpanded.wrappedValue ? 0 : -90))
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .focusable(false)
+
+            if isExpanded.wrappedValue {
+                VStack(alignment: .leading, spacing: 10) {
+                    content()
+                }
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .padding(10)
+        .background(Color.white.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private func opacitySettingRow(title: String, value: Binding<Double>) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(title)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(textPrimary)
+                Spacer()
+                Text("\(Int(value.wrappedValue * 100))%")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(textSecondary)
+            }
+            WhiteOpacitySlider(value: value, range: 0.25...1.0, step: 0.01)
+        }
+        .padding(10)
+        .background(Color.white.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     private func settingToggleCard(title: String, isOn: Binding<Bool>) -> some View {
@@ -802,6 +881,14 @@ private struct WhiteOpacitySlider: View {
 private extension Comparable {
     func clamped(to range: ClosedRange<Self>) -> Self {
         min(max(self, range.lowerBound), range.upperBound)
+    }
+}
+
+private struct SettingsContentHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
     }
 }
 
