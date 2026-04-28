@@ -25,14 +25,14 @@ struct ReminderFloatingView: View {
             VStack(spacing: 16) {
                 titleView
 
-                Text("\(appState.breakSecondsLeft)")
-                    .font(.system(size: 84, weight: .bold, design: .rounded))
-                    .monospacedDigit()
-                    .foregroundStyle(textPrimary)
-                    // 关键流程：倒计时数字禁用过渡动画，避免透明面板上出现旧数字叠影。
-                    .transaction { transaction in
-                        transaction.animation = nil
-                    }
+                StableText(
+                    "\(appState.breakSecondsLeft)",
+                    size: 84,
+                    weight: .bold,
+                    alpha: 0.94,
+                    usesMonospacedDigit: true
+                )
+                .frame(height: 90)
 
                 HStack(spacing: 22) {
                     if appState.reminderPhase != .completed {
@@ -47,10 +47,8 @@ struct ReminderFloatingView: View {
                     }
                 }
 
-                Text(messageText)
-                    .font(.system(size: 17, weight: .medium))
-                    .foregroundStyle(textSecondary)
-                    .lineLimit(1)
+                StableText(messageText, size: 17, weight: .medium, alpha: 0.72)
+                    .frame(height: 22)
             }
             .padding(.horizontal, 40)
             .padding(.vertical, 28)
@@ -104,11 +102,8 @@ struct ReminderFloatingView: View {
     }
 
     private func titleTextView(_ text: String) -> some View {
-        Text(text)
-            .font(.system(size: 26, weight: .semibold))
-            .foregroundStyle(textPrimary)
-            .lineLimit(1)
-            .minimumScaleFactor(0.80)
+        StableText(text, size: 26, weight: .semibold, alpha: 0.94)
+            .frame(height: 34)
     }
 
     private var messageText: String {

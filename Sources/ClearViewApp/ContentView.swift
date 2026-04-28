@@ -32,7 +32,6 @@ struct ContentView: View {
     private var selectedFill: Color { Color.white.opacity(0.24) }
     private var buttonTint: Color { Color.white.opacity(0.20) }
     private var buttonBorder: Color { Color.white.opacity(0.22) }
-    private var textShadow: Color { Color.black.opacity(0.55) }
 
     var body: some View {
         ZStack {
@@ -120,19 +119,14 @@ struct ContentView: View {
 
     private var clockHeader: some View {
         VStack(spacing: 8) {
-            Text(formatTime(now))
-                .font(.system(size: 56, weight: .light, design: .rounded))
-                .monospacedDigit()
-                .foregroundStyle(textPrimary)
-                .shadow(color: textShadow, radius: 8, x: 0, y: 3)
+            StableText(formatTime(now), size: 56, weight: .light, alpha: 0.96, usesMonospacedDigit: true)
+                .frame(height: 64)
 
-            Text(formatDate(now))
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(textSecondary)
+            StableText(formatDate(now), size: 13, weight: .medium, alpha: 0.78)
+                .frame(height: 18)
 
-            Text(greetingText)
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(textPrimary)
+            StableText(greetingText, size: 18, weight: .semibold, alpha: 0.96)
+                .frame(height: 24)
                 .padding(.top, 6)
         }
     }
@@ -155,13 +149,8 @@ struct ContentView: View {
 
     private var quoteFooter: some View {
         VStack(spacing: 6) {
-            Text("慢慢眨眼，看看远方，给视力一点缓冲。")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(textPrimary.opacity(0.88))
-
-            Text("©️ClearView")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(textSecondary.opacity(0.78))
+            StableText("慢慢眨眼，看看远方，给视力一点缓冲。", size: 14, weight: .medium, alpha: 0.88)
+                .frame(height: 20)
         }
     }
 
@@ -216,16 +205,17 @@ struct ContentView: View {
     private var pageDisplayArea: some View {
         Group {
             if page == .timer {
-                Text(format(seconds: appState.secondsUntilBreak))
-                    .font(.system(size: 72, weight: .bold, design: .rounded))
-                    .monospacedDigit()
-                    .foregroundStyle(textPrimary)
-                    .shadow(color: textShadow, radius: 10, x: 0, y: 4)
+                StableText(
+                    format(seconds: appState.secondsUntilBreak),
+                    size: 72,
+                    weight: .bold,
+                    alpha: 0.96,
+                    usesMonospacedDigit: true
+                )
+                .frame(height: 82)
             } else {
-                Text("护眼模式")
-                    .font(.system(size: 42, weight: .bold, design: .rounded))
-                    .foregroundStyle(textPrimary)
-                    .shadow(color: textShadow, radius: 8, x: 0, y: 3)
+                StableText("护眼模式", size: 42, weight: .bold, alpha: 0.96)
+                    .frame(height: 52)
             }
         }
     }
