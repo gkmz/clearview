@@ -16,13 +16,12 @@ struct ContentView: View {
     // 关键流程：统一四个区域的尺寸比例，避免页面切换时布局抖动。
     private enum Layout {
         static let timerCardWidth: CGFloat = 480
-        static let timerCardHeight: CGFloat = 280
+        static let timerCardHeight: CGFloat = 236
         static let cardPadding: CGFloat = 22
         static let sectionSpacing: CGFloat = 10
         static let topTabHeight: CGFloat = 44
         static let displayHeight: CGFloat = 86
         static let functionHeight: CGFloat = 58
-        static let systemHeight: CGFloat = 38
     }
 
     // 关键流程：根据系统深浅色自动切换背景、文字、按钮层级。
@@ -52,9 +51,16 @@ struct ContentView: View {
                 quoteFooter
                     .padding(.top, 4)
 
-                Spacer(minLength: 26)
+                // 关键流程：底部系统按钮移到主界面右下角后，给提示文案预留更大下边距，视觉上相当于“上移”。
+                Spacer(minLength: 72)
             }
             .padding(.horizontal, 40)
+
+            // 关键流程：将设置/测试/隐藏按钮移到主界面右下角，不再占用中间内容卡片高度。
+            globalBottomActions
+                .padding(.trailing, 34)
+                .padding(.bottom, 28)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
 
             if showSettings {
                 settingsModal
@@ -142,18 +148,10 @@ struct ContentView: View {
 
             pageFunctionArea
                 .frame(maxWidth: .infinity, minHeight: Layout.functionHeight, maxHeight: Layout.functionHeight)
-
-            bottomActions
-                .frame(maxWidth: .infinity, minHeight: Layout.systemHeight, maxHeight: Layout.systemHeight)
         }
         .padding(Layout.cardPadding)
         .frame(width: Layout.timerCardWidth, height: Layout.timerCardHeight)
-        .background(Color.black.opacity((isDark ? 0.20 : 0.16) * mainOpacity))
-        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(Color.white.opacity(0.12 * mainOpacity), lineWidth: 1)
-        )
+        // 关键流程：去掉功能区独立灰底，让功能区和标题区共享主界面同一层背景。
     }
 
     private var quoteFooter: some View {
@@ -174,16 +172,39 @@ struct ContentView: View {
             tabButton(title: "护眼", page: .filter)
         }
         .padding(6)
-        .background(.ultraThinMaterial)
-        .background(panelTint)
+        // 关键流程：透明面板内的系统毛玻璃会变白，这里改用低透明手工叠层，保证背景图直接透出。
+        .background {
+            ZStack {
+                Capsule(style: .continuous)
+                    .fill(Color.white.opacity(isDark ? 0.08 : 0.10))
+                Capsule(style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(isDark ? 0.22 : 0.26),
+                                Color.white.opacity(isDark ? 0.07 : 0.09),
+                                Color.black.opacity(isDark ? 0.06 : 0.03)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+            }
+            .clipShape(Capsule(style: .continuous))
+        }
         .overlay(
-            Capsule()
-                .stroke(Color.white.opacity(0.18), lineWidth: 1)
+            Capsule(style: .continuous)
+                .stroke(Color.white.opacity(isDark ? 0.42 : 0.58), lineWidth: 1)
         )
+        .overlay(alignment: .top) {
+            Capsule(style: .continuous)
+                .fill(Color.white.opacity(isDark ? 0.32 : 0.48))
+                .frame(height: 1)
+                .padding(.horizontal, 20)
+        }
         .clipShape(Capsule())
-        .shadow(color: .black.opacity(isDark ? 0.34 : 0.10), radius: 14, x: 0, y: 7)
+        .shadow(color: .black.opacity(isDark ? 0.22 : 0.12), radius: 14, x: 0, y: 7)
     }
-
     private var timerPage: some View {
         EmptyView()
     }
@@ -259,23 +280,25 @@ struct ContentView: View {
         }
     }
 
-    private var bottomActions: some View {
+    private var globalBottomActions: some View {
         HStack(spacing: 12) {
-            Spacer()
-
-            if page == .timer {
-                // 关键流程：休息页保留设置和测试，右侧电源按钮只隐藏主界面。
-                bottomIconButton(systemName: "gearshape", help: "调整节奏") {
-                    withAnimation(.easeInOut(duration: 0.18)) {
-                        showSettings.toggle()
-                    }
+            // 关键流程：护眼页也显示设置和测试图标，但禁用点击，保持布局稳定。
+            bottomIconButton(
+                systemName: "gearshape",
+                help: page == .timer ? "调整节奏" : "护眼页暂不可用",
+                isDisabled: page != .timer
+            ) {
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    showSettings.toggle()
                 }
+            }
 
-                bottomIconButton(systemName: "bell.badge", help: "试试提醒") {
-                    appState.triggerTestReminderNow()
-                }
-            } else {
-                // 关键流程：过滤页不重复展示过滤入口，只保留隐藏主界面的系统动作。
+            bottomIconButton(
+                systemName: "bell.badge",
+                help: page == .timer ? "试试提醒" : "护眼页暂不可用",
+                isDisabled: page != .timer
+            ) {
+                appState.triggerTestReminderNow()
             }
 
             bottomIconButton(systemName: "power", help: "隐藏主界面") {
@@ -287,7 +310,7 @@ struct ContentView: View {
 
     private var settingsModal: some View {
         ZStack {
-            Color.black.opacity(0.12)
+            Color.black.opacity(isDark ? 0.78 : 0.72)
                 .ignoresSafeArea()
                 .onTapGesture {
                     showSettings = false
@@ -349,15 +372,18 @@ struct ContentView: View {
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(textSecondary)
                 }
-                Slider(
+                WhiteOpacitySlider(
                     value: Binding(
                         get: { appState.mainWindowOpacity },
                         set: { appState.updateMainWindowOpacity($0) }
                     ),
-                    in: 0.45...1.0,
+                    range: 0.25...1.0,
                     step: 0.01
                 )
             }
+            .padding(10)
+            .background(Color.white.opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
 
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
@@ -369,32 +395,80 @@ struct ContentView: View {
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(textSecondary)
                 }
-                Slider(
+                WhiteOpacitySlider(
                     value: Binding(
                         get: { appState.reminderWindowOpacity },
                         set: { appState.updateReminderWindowOpacity($0) }
                     ),
-                    in: 0.45...1.0,
+                    range: 0.25...1.0,
                     step: 0.01
                 )
             }
+            .padding(10)
+            .background(Color.white.opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
             .padding(18)
             .frame(width: 340)
-            .background(.ultraThinMaterial)
+            .background(Color.black.opacity(isDark ? 0.66 : 0.58))
             .clipShape(RoundedRectangle(cornerRadius: 24))
             .overlay(
                 RoundedRectangle(cornerRadius: 24)
-                    .stroke(Color.white.opacity(0.55), lineWidth: 1)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(isDark ? 0.12 : 0.16),
+                                Color.white.opacity(isDark ? 0.04 : 0.06),
+                                Color.black.opacity(isDark ? 0.12 : 0.08)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .allowsHitTesting(false)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 24)
+                    .stroke(Color.white.opacity(0.30), lineWidth: 1)
+                    .allowsHitTesting(false)
             )
             .overlay(alignment: .top) {
                 RoundedRectangle(cornerRadius: 24)
                     .fill(Color.white.opacity(0.16))
                     .frame(height: 1)
                     .padding(.horizontal, 14)
+                    .allowsHitTesting(false)
             }
             .shadow(color: .black.opacity(0.18), radius: 24, x: 0, y: 14)
+            .onAppear {
+                // 关键流程：设置弹窗打开时临时禁用窗口背景拖动，避免拖动滑杆时拖走整个主界面。
+                appState.setMainPanelMovableByBackground(false)
+            }
+            .onDisappear {
+                appState.setMainPanelMovableByBackground(true)
+            }
         }
+    }
+
+    private func bottomIconButton(
+        systemName: String,
+        help: String,
+        isDisabled: Bool = false,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 15, weight: .semibold))
+                .frame(width: 40, height: 40)
+                .foregroundStyle(textSecondary.opacity(isDisabled ? 0.50 : 1.0))
+                .background(Color.clear)
+                .modifier(GlassButtonModifier(cornerRadius: 20, intensity: isDisabled ? 0.55 : 1.0, tint: buttonTint, border: buttonBorder))
+                .clipShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .focusable(false)
+        .disabled(isDisabled)
+        .hoverTooltip(help)
     }
 
     private func tabButton(title: String, page target: Page) -> some View {
@@ -408,7 +482,35 @@ struct ContentView: View {
             .padding(.horizontal, 18)
             .padding(.vertical, 10)
             .foregroundStyle(page == target ? textPrimary : textSecondary)
-            .background(page == target ? (isDark ? Color.white.opacity(0.18) : selectedFill) : Color.clear)
+            .background {
+                if page == target {
+                    ZStack {
+                        Capsule(style: .continuous)
+                            .fill(Color.white.opacity(isDark ? 0.12 : 0.16))
+                        Capsule(style: .continuous)
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        Color.white.opacity(isDark ? 0.26 : 0.32),
+                                        Color.white.opacity(isDark ? 0.07 : 0.10)
+                                    ],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                    }
+                    .clipShape(Capsule(style: .continuous))
+                }
+            }
+            .overlay(
+                Capsule()
+                    .stroke(
+                        page == target
+                            ? Color.white.opacity(isDark ? 0.42 : 0.62)
+                            : Color.clear,
+                        lineWidth: 1
+                    )
+            )
             .modifier(HoverActivationModifier(cornerRadius: 999, tint: selectedFill, isActive: page == target))
             .clipShape(Capsule())
             .contentShape(Capsule())
@@ -435,21 +537,6 @@ struct ContentView: View {
         .hoverTooltip(accessibility)
     }
 
-    private func bottomIconButton(systemName: String, help: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: systemName)
-                .font(.system(size: 15, weight: .semibold))
-                .frame(width: 40, height: 40)
-                .foregroundStyle(textSecondary)
-                .background(Color.clear)
-                .modifier(GlassButtonModifier(cornerRadius: 20, intensity: 1.0, tint: buttonTint, border: buttonBorder))
-                .clipShape(Circle())
-        }
-        .buttonStyle(.plain)
-        .focusable(false)
-        .hoverTooltip(help)
-    }
-
     private func presetRow(
         title: String,
         values: [Int],
@@ -461,6 +548,7 @@ struct ContentView: View {
             HStack {
                 Text(title)
                     .font(.caption)
+                    .foregroundStyle(textPrimary)
                 Spacer()
                 Text("\(selected)\(unit)")
                     .font(.caption)
@@ -469,15 +557,24 @@ struct ContentView: View {
 
             HStack(spacing: 8) {
                 ForEach(values, id: \.self) { value in
+                    let isSelected = selected == value
                     Button {
                         onSelect(value)
                     } label: {
                         Text("\(value)")
-                            .font(.caption.weight(.semibold))
+                            .font(.caption.weight(isSelected ? .bold : .semibold))
                             .frame(width: 48, height: 28)
-                            .foregroundStyle(textPrimary)
-                            .background(selected == value ? selectedFill : Color.clear)
-                            .modifier(GlassButtonModifier(cornerRadius: 14, intensity: selected == value ? 0.45 : 1.0, tint: buttonTint, border: buttonBorder))
+                            .foregroundStyle(isSelected ? Color.white : textPrimary)
+                            .background(isSelected ? Color.white.opacity(isDark ? 0.34 : 0.30) : Color.clear)
+                            .modifier(
+                                GlassButtonModifier(
+                                    cornerRadius: 14,
+                                    intensity: isSelected ? 0.60 : 1.0,
+                                    tint: buttonTint,
+                                    border: isSelected ? Color.white.opacity(0.50) : buttonBorder
+                                )
+                            )
+                            .scaleEffect(isSelected ? 1.04 : 1.0)
                             .clipShape(Capsule())
                     }
                     .buttonStyle(.plain)
@@ -558,18 +655,30 @@ private struct GlassButtonModifier: ViewModifier {
     @State private var isHovering = false
 
     func body(content: Content) -> some View {
-        let fillOpacity = (isHovering ? 0.28 : 0.18) * intensity
-        let borderOpacity = (isHovering ? 0.36 : 0.24) * intensity
+        let fillOpacity = (isHovering ? 0.18 : 0.10) * intensity
+        let highlightOpacity = (isHovering ? 0.32 : 0.22) * intensity
+        let borderOpacity = (isHovering ? 0.52 : 0.38) * intensity
 
         content
-            // 关键流程：保留通透感，去掉复杂边缘效果，只用轻背景、细边框和 hover 提亮表达状态。
-            .background(
-                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(.ultraThinMaterial)
-            )
+            // 关键流程：按钮统一使用手工半透明玻璃层，避免系统 material 在浅色背景下变成实灰块。
             .background(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .fill(tint.opacity(fillOpacity))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(highlightOpacity),
+                                Color.white.opacity(highlightOpacity * 0.36),
+                                Color.black.opacity(0.03 * intensity)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .allowsHitTesting(false)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
@@ -587,6 +696,65 @@ private struct GlassButtonModifier: ViewModifier {
             .onHover { hovering in
                 isHovering = hovering
             }
+    }
+}
+
+private struct WhiteOpacitySlider: View {
+    @Binding var value: Double
+    let range: ClosedRange<Double>
+    let step: Double
+
+    private let thumbSize: CGFloat = 16
+    private let trackHeight: CGFloat = 5
+
+    var body: some View {
+        GeometryReader { proxy in
+            let width = max(proxy.size.width, 1)
+            let progress = CGFloat((value - range.lowerBound) / (range.upperBound - range.lowerBound))
+                .clamped(to: 0...1)
+            let thumbX = progress * (width - thumbSize)
+
+            ZStack(alignment: .leading) {
+                Capsule(style: .continuous)
+                    .fill(Color.white.opacity(0.20))
+                    .frame(height: trackHeight)
+                    .padding(.horizontal, thumbSize / 2)
+
+                Capsule(style: .continuous)
+                    .fill(Color.white.opacity(0.88))
+                    .frame(width: thumbX + thumbSize / 2, height: trackHeight)
+                    .padding(.leading, thumbSize / 2)
+
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: thumbSize, height: thumbSize)
+                    .shadow(color: .black.opacity(0.22), radius: 4, x: 0, y: 2)
+                    .offset(x: thumbX)
+            }
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { gesture in
+                        // 关键流程：将拖动位置映射为透明度数值，并按 step 对齐，保证设置保存稳定。
+                        let usableWidth = max(width - thumbSize, 1)
+                        let rawProgress = ((gesture.location.x - thumbSize / 2) / usableWidth).clamped(to: 0...1)
+                        let rawValue = range.lowerBound + Double(rawProgress) * (range.upperBound - range.lowerBound)
+                        value = stepped(rawValue)
+                    }
+            )
+        }
+        .frame(height: 22)
+    }
+
+    private func stepped(_ rawValue: Double) -> Double {
+        let steppedValue = (rawValue / step).rounded() * step
+        return min(max(steppedValue, range.lowerBound), range.upperBound)
+    }
+}
+
+private extension Comparable {
+    func clamped(to range: ClosedRange<Self>) -> Self {
+        min(max(self, range.lowerBound), range.upperBound)
     }
 }
 

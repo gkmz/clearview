@@ -8,7 +8,12 @@ struct ReminderFloatingView: View {
     private var textPrimary: Color { Color.white.opacity(0.94) }
     private var textSecondary: Color { Color.white.opacity(0.72) }
     private var opacityFactor: Double { appState.reminderWindowOpacity }
-    private var panelFill: Color { Color.black.opacity((isDark ? 0.46 : 0.42) * opacityFactor) }
+    private var panelFill: Color {
+        let opacity = isDark
+            ? 0.30 + 0.70 * opacityFactor
+            : 0.26 + 0.74 * opacityFactor
+        return Color.black.opacity(opacity)
+    }
     private var panelBorder: Color { Color.white.opacity((isDark ? 0.16 : 0.18) * opacityFactor) }
     private var buttonFill: Color { Color.white.opacity((isDark ? 0.12 : 0.14) * opacityFactor) }
     private var buttonBorder: Color { Color.white.opacity((isDark ? 0.18 : 0.20) * opacityFactor) }
@@ -24,7 +29,10 @@ struct ReminderFloatingView: View {
                     .font(.system(size: 84, weight: .bold, design: .rounded))
                     .monospacedDigit()
                     .foregroundStyle(textPrimary)
-                    .id(appState.breakSecondsLeft)
+                    // 关键流程：倒计时数字禁用过渡动画，避免透明面板上出现旧数字叠影。
+                    .transaction { transaction in
+                        transaction.animation = nil
+                    }
 
                 HStack(spacing: 22) {
                     if appState.reminderPhase != .completed {
@@ -60,10 +68,10 @@ struct ReminderFloatingView: View {
 
     private var panelBackground: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 34)
+            RoundedRectangle(cornerRadius: 26)
                 .fill(panelFill)
 
-            RoundedRectangle(cornerRadius: 34)
+            RoundedRectangle(cornerRadius: 26)
                 .fill(
                     LinearGradient(
                         colors: [
@@ -76,10 +84,10 @@ struct ReminderFloatingView: View {
                     )
                 )
 
-            RoundedRectangle(cornerRadius: 34)
+            RoundedRectangle(cornerRadius: 26)
                 .stroke(panelBorder, lineWidth: 1)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 34))
+        .clipShape(RoundedRectangle(cornerRadius: 26))
         .allowsHitTesting(false)
     }
 

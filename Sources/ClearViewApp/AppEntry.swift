@@ -83,6 +83,10 @@ final class AppState: ObservableObject {
         mainPanel?.hide()
     }
 
+    func setMainPanelMovableByBackground(_ isMovable: Bool) {
+        mainPanel?.setMovableByBackground(isMovable)
+    }
+
     func toggleReminder(_ enabled: Bool) {
         reminderEnabled = enabled
         if enabled {
@@ -134,14 +138,14 @@ final class AppState: ObservableObject {
 
     func updateMainWindowOpacity(_ value: Double) {
         // 关键流程：限制透明度有效范围，避免极端值导致可读性崩溃。
-        mainWindowOpacity = min(max(value, 0.45), 1.0)
+        mainWindowOpacity = min(max(value, 0.25), 1.0)
         statusText = "主界面透明度已调整"
         persistSettings()
     }
 
     func updateReminderWindowOpacity(_ value: Double) {
         // 关键流程：提示窗透明度单独可调，兼顾提醒可见性与通透感。
-        reminderWindowOpacity = min(max(value, 0.45), 1.0)
+        reminderWindowOpacity = min(max(value, 0.25), 1.0)
         statusText = "提示窗透明度已调整"
         persistSettings()
     }
@@ -210,6 +214,9 @@ final class AppState: ObservableObject {
                     self.breakCountdownTimer?.invalidate()
                     self.breakCountdownTimer = nil
                     self.startBreakCountdown()
+                } else {
+                    // 关键流程：倒计时过程中仅触发重绘，不重建 SwiftUI 视图，兼顾去重影与悬停提示稳定性。
+                    self.reminderPanel?.refreshDisplayOnly()
                 }
             }
         }
@@ -235,6 +242,9 @@ final class AppState: ObservableObject {
                     self.playBreakFinishedSound()
                     self.breakCountdownTimer?.invalidate()
                     self.breakCountdownTimer = nil
+                } else {
+                    // 关键流程：每秒数字变化后请求窗口重绘，清理透明面板上的旧帧残留。
+                    self.reminderPanel?.refreshDisplayOnly()
                 }
             }
         }
@@ -262,8 +272,8 @@ final class AppState: ObservableObject {
         breakDurationSeconds = max(5, settings.breakDurationSeconds)
         filterLevel = BlueLightLevel.fromSettingsKey(settings.filterLevelKey)
         useBackgroundImage = settings.useBackgroundImage
-        mainWindowOpacity = min(max(settings.mainWindowOpacity, 0.45), 1.0)
-        reminderWindowOpacity = min(max(settings.reminderWindowOpacity, 0.45), 1.0)
+        mainWindowOpacity = min(max(settings.mainWindowOpacity, 0.25), 1.0)
+        reminderWindowOpacity = min(max(settings.reminderWindowOpacity, 0.25), 1.0)
 
         // 关键流程：应用启动时恢复倒计时基础值，避免界面显示与配置不一致。
         secondsUntilBreak = workIntervalMinutes * 60
@@ -338,6 +348,15 @@ final class ReminderPanelController {
         panel.invalidateShadow()
     }
 
+    func refreshDisplayOnly() {
+        guard let panel else { return }
+        panel.contentView?.needsDisplay = true
+        panel.contentView?.subviews.forEach { $0.needsDisplay = true }
+        panel.contentView?.layer?.setNeedsDisplay()
+        panel.contentView?.layer?.displayIfNeeded()
+        panel.displayIfNeeded()
+    }
+
     func hide() {
         panel?.orderOut(nil)
     }
@@ -349,6 +368,8 @@ final class ReminderPanelController {
 
         let hostingView = NSHostingView(rootView: root)
         hostingView.wantsLayer = true
+        hostingView.layerContentsRedrawPolicy = .onSetNeedsDisplay
+        hostingView.canDrawSubviewsIntoLayer = true
         hostingView.layer?.isOpaque = false
         hostingView.layer?.backgroundColor = NSColor.clear.cgColor
         return hostingView

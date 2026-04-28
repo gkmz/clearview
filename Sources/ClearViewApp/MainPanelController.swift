@@ -40,6 +40,10 @@ final class MainPanelController {
         panel?.orderOut(nil)
     }
 
+    func setMovableByBackground(_ isMovable: Bool) {
+        panel?.isMovableByWindowBackground = isMovable
+    }
+
     private func makePanel(appState: AppState) -> NSPanel {
         let root = ContentView()
             .environmentObject(appState)
