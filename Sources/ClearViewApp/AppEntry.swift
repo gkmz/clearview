@@ -77,7 +77,7 @@ final class AppState: ObservableObject {
             modifierFlagsRaw: shortcutModifierFlagsRaw
         ) { [weak self] in
             Task { @MainActor in
-                self?.showMainPanel()
+                self?.toggleMainPanel()
             }
         }
         if !shortcutRegistered {
@@ -163,10 +163,10 @@ final class AppState: ObservableObject {
     }
 
     func updateShortcut(keyCode: UInt16, modifierFlagsRaw: UInt) {
-        // 关键流程：快捷键至少需要一个修饰键，避免和系统输入冲突。
+        // 关键流程：普通按键至少需要一个修饰键；F1-F20 这类功能键允许单独作为全局快捷键。
         let flags = NSEvent.ModifierFlags(rawValue: modifierFlagsRaw)
             .intersection([.command, .shift, .option, .control])
-        guard !flags.isEmpty else { return }
+        guard !flags.isEmpty || GlobalShortcutManager.isFunctionKey(keyCode) else { return }
         let previousKeyCode = shortcutKeyCode
         let previousFlagsRaw = shortcutModifierFlagsRaw
         shortcutKeyCode = keyCode

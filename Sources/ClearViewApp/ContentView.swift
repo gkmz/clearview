@@ -614,7 +614,8 @@ struct ContentView: View {
         shortcutRecordMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             guard isRecordingShortcut else { return event }
             let flags = event.modifierFlags.intersection([.command, .shift, .option, .control])
-            guard !flags.isEmpty else {
+            // 关键流程：普通键需要组合修饰键，功能键允许单独录制，例如 F1/F2。
+            guard !flags.isEmpty || GlobalShortcutManager.isFunctionKey(event.keyCode) else {
                 return nil
             }
             appState.updateShortcut(keyCode: event.keyCode, modifierFlagsRaw: flags.rawValue)
