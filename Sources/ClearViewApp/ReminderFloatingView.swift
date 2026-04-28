@@ -7,10 +7,11 @@ struct ReminderFloatingView: View {
     private var isDark: Bool { colorScheme == .dark }
     private var textPrimary: Color { Color.white.opacity(0.94) }
     private var textSecondary: Color { Color.white.opacity(0.72) }
-    private var panelFill: Color { Color.black.opacity(isDark ? 0.46 : 0.42) }
-    private var panelBorder: Color { Color.white.opacity(isDark ? 0.16 : 0.18) }
-    private var buttonFill: Color { Color.white.opacity(isDark ? 0.12 : 0.14) }
-    private var buttonBorder: Color { Color.white.opacity(isDark ? 0.18 : 0.20) }
+    private var opacityFactor: Double { appState.reminderWindowOpacity }
+    private var panelFill: Color { Color.black.opacity((isDark ? 0.46 : 0.42) * opacityFactor) }
+    private var panelBorder: Color { Color.white.opacity((isDark ? 0.16 : 0.18) * opacityFactor) }
+    private var buttonFill: Color { Color.white.opacity((isDark ? 0.12 : 0.14) * opacityFactor) }
+    private var buttonBorder: Color { Color.white.opacity((isDark ? 0.18 : 0.20) * opacityFactor) }
 
     var body: some View {
         ZStack {

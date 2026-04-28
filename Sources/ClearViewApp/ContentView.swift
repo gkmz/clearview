@@ -27,6 +27,7 @@ struct ContentView: View {
 
     // 关键流程：根据系统深浅色自动切换背景、文字、按钮层级。
     private var isDark: Bool { colorScheme == .dark }
+    private var mainOpacity: Double { appState.mainWindowOpacity }
     private var textPrimary: Color { Color.white.opacity(0.96) }
     private var textSecondary: Color { Color.white.opacity(0.78) }
     private var selectedFill: Color { Color.white.opacity(0.24) }
@@ -75,13 +76,13 @@ struct ContentView: View {
                     .clipped()
 
                 // 关键流程：背景图只是氛围层，遮罩负责保证白色文字始终清晰。
-                Color.black.opacity(isDark ? 0.42 : 0.34)
+                Color.black.opacity((isDark ? 0.42 : 0.34) * mainOpacity)
 
                 LinearGradient(
                     colors: [
-                        Color.black.opacity(isDark ? 0.26 : 0.18),
-                        Color.black.opacity(0.06),
-                        Color.black.opacity(isDark ? 0.34 : 0.24)
+                        Color.black.opacity((isDark ? 0.26 : 0.18) * mainOpacity),
+                        Color.black.opacity(0.06 * mainOpacity),
+                        Color.black.opacity((isDark ? 0.34 : 0.24) * mainOpacity)
                     ],
                     startPoint: .top,
                     endPoint: .bottom
@@ -101,11 +102,14 @@ struct ContentView: View {
                 Image(nsImage: image)
                     .resizable()
                     .scaledToFill()
+                    .opacity(mainOpacity)
             } else {
                 (isDark ? Color.black : Color(red: 0.93, green: 0.96, blue: 0.94))
+                    .opacity(mainOpacity)
             }
         } else {
             (isDark ? Color.black : Color(red: 0.93, green: 0.96, blue: 0.94))
+                .opacity(mainOpacity)
         }
     }
 
@@ -144,11 +148,11 @@ struct ContentView: View {
         }
         .padding(Layout.cardPadding)
         .frame(width: Layout.timerCardWidth, height: Layout.timerCardHeight)
-        .background(Color.black.opacity(isDark ? 0.20 : 0.16))
+        .background(Color.black.opacity((isDark ? 0.20 : 0.16) * mainOpacity))
         .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                .stroke(Color.white.opacity(0.12 * mainOpacity), lineWidth: 1)
         )
     }
 
@@ -334,6 +338,46 @@ struct ContentView: View {
                     .foregroundStyle(textPrimary)
             }
             .toggleStyle(.switch)
+
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("主界面透明度")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(textPrimary)
+                    Spacer()
+                    Text("\(Int(appState.mainWindowOpacity * 100))%")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(textSecondary)
+                }
+                Slider(
+                    value: Binding(
+                        get: { appState.mainWindowOpacity },
+                        set: { appState.updateMainWindowOpacity($0) }
+                    ),
+                    in: 0.45...1.0,
+                    step: 0.01
+                )
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("提示窗透明度")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(textPrimary)
+                    Spacer()
+                    Text("\(Int(appState.reminderWindowOpacity * 100))%")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(textSecondary)
+                }
+                Slider(
+                    value: Binding(
+                        get: { appState.reminderWindowOpacity },
+                        set: { appState.updateReminderWindowOpacity($0) }
+                    ),
+                    in: 0.45...1.0,
+                    step: 0.01
+                )
+            }
             }
             .padding(18)
             .frame(width: 340)

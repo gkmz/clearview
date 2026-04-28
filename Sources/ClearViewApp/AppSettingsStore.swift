@@ -6,13 +6,17 @@ struct AppSettings: Codable {
     var breakDurationSeconds: Int
     var filterLevelKey: String
     var useBackgroundImage: Bool
+    var mainWindowOpacity: Double
+    var reminderWindowOpacity: Double
 
     static let `default` = AppSettings(
         reminderEnabled: true,
         workIntervalMinutes: 20,
         breakDurationSeconds: 20,
         filterLevelKey: "off",
-        useBackgroundImage: true
+        useBackgroundImage: true,
+        mainWindowOpacity: 0.80,
+        reminderWindowOpacity: 0.78
     )
 }
 

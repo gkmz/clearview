@@ -31,6 +31,8 @@ final class AppState: ObservableObject {
     @Published var secondsUntilBreak: Int = 20 * 60
     @Published var filterLevel: BlueLightLevel = .off
     @Published var useBackgroundImage = true
+    @Published var mainWindowOpacity: Double = 0.80
+    @Published var reminderWindowOpacity: Double = 0.78
     @Published var statusText: String = "陪你护眼"
     @Published var reminderPhase: ReminderPhase = .none
     @Published var breakSecondsLeft: Int = 20
@@ -127,6 +129,20 @@ final class AppState: ObservableObject {
     func updateBackgroundImageEnabled(_ enabled: Bool) {
         useBackgroundImage = enabled
         statusText = enabled ? "背景图片已启用" : "背景图片已关闭"
+        persistSettings()
+    }
+
+    func updateMainWindowOpacity(_ value: Double) {
+        // 关键流程：限制透明度有效范围，避免极端值导致可读性崩溃。
+        mainWindowOpacity = min(max(value, 0.45), 1.0)
+        statusText = "主界面透明度已调整"
+        persistSettings()
+    }
+
+    func updateReminderWindowOpacity(_ value: Double) {
+        // 关键流程：提示窗透明度单独可调，兼顾提醒可见性与通透感。
+        reminderWindowOpacity = min(max(value, 0.45), 1.0)
+        statusText = "提示窗透明度已调整"
         persistSettings()
     }
 
@@ -246,6 +262,8 @@ final class AppState: ObservableObject {
         breakDurationSeconds = max(5, settings.breakDurationSeconds)
         filterLevel = BlueLightLevel.fromSettingsKey(settings.filterLevelKey)
         useBackgroundImage = settings.useBackgroundImage
+        mainWindowOpacity = min(max(settings.mainWindowOpacity, 0.45), 1.0)
+        reminderWindowOpacity = min(max(settings.reminderWindowOpacity, 0.45), 1.0)
 
         // 关键流程：应用启动时恢复倒计时基础值，避免界面显示与配置不一致。
         secondsUntilBreak = workIntervalMinutes * 60
@@ -261,7 +279,9 @@ final class AppState: ObservableObject {
             workIntervalMinutes: workIntervalMinutes,
             breakDurationSeconds: breakDurationSeconds,
             filterLevelKey: filterLevel.settingsKey,
-            useBackgroundImage: useBackgroundImage
+            useBackgroundImage: useBackgroundImage,
+            mainWindowOpacity: mainWindowOpacity,
+            reminderWindowOpacity: reminderWindowOpacity
         )
         settingsStore.save(settings)
     }
