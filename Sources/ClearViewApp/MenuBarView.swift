@@ -13,7 +13,7 @@ struct MenuBarView: View {
 
         Divider()
 
-        Button(appState.reminderEnabled ? "先不打扰" : "继续提醒") {
+        Button(appState.reminderEnabled ? "暂不打扰" : "继续提醒") {
             appState.toggleReminder(!appState.reminderEnabled)
         }
 

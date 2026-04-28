@@ -24,13 +24,12 @@ struct ContentView: View {
         static let functionHeight: CGFloat = 58
     }
 
-    // 关键流程：根据系统深浅色自动切换背景、文字、按钮层级。
+    // 关键流程：背景图片仍按系统深浅色切换，但 UI 基底统一为黑色玻璃风格。
     private var isDark: Bool { colorScheme == .dark }
     private var mainOpacity: Double { appState.mainWindowOpacity }
     private var textPrimary: Color { Color.white.opacity(0.96) }
     private var textSecondary: Color { Color.white.opacity(0.78) }
     private var selectedFill: Color { Color.white.opacity(0.24) }
-    private var panelTint: Color { Color.black.opacity(isDark ? 0.20 : 0.16) }
     private var buttonTint: Color { Color.white.opacity(0.20) }
     private var buttonBorder: Color { Color.white.opacity(0.22) }
     private var textShadow: Color { Color.black.opacity(0.55) }
@@ -82,13 +81,13 @@ struct ContentView: View {
                     .clipped()
 
                 // 关键流程：背景图只是氛围层，遮罩负责保证白色文字始终清晰。
-                Color.black.opacity((isDark ? 0.42 : 0.34) * mainOpacity)
+                Color.black.opacity(0.42 * mainOpacity)
 
                 LinearGradient(
                     colors: [
-                        Color.black.opacity((isDark ? 0.26 : 0.18) * mainOpacity),
+                        Color.black.opacity(0.26 * mainOpacity),
                         Color.black.opacity(0.06 * mainOpacity),
-                        Color.black.opacity((isDark ? 0.34 : 0.24) * mainOpacity)
+                        Color.black.opacity(0.34 * mainOpacity)
                     ],
                     startPoint: .top,
                     endPoint: .bottom
@@ -110,11 +109,11 @@ struct ContentView: View {
                     .scaledToFill()
                     .opacity(mainOpacity)
             } else {
-                (isDark ? Color.black : Color(red: 0.93, green: 0.96, blue: 0.94))
+                Color.black
                     .opacity(mainOpacity)
             }
         } else {
-            (isDark ? Color.black : Color(red: 0.93, green: 0.96, blue: 0.94))
+            Color.black
                 .opacity(mainOpacity)
         }
     }
@@ -160,7 +159,7 @@ struct ContentView: View {
                 .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(textPrimary.opacity(0.88))
 
-            Text("ClearView")
+            Text("©️ClearView")
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(textSecondary.opacity(0.78))
         }
@@ -176,14 +175,14 @@ struct ContentView: View {
         .background {
             ZStack {
                 Capsule(style: .continuous)
-                    .fill(Color.white.opacity(isDark ? 0.08 : 0.10))
+                    .fill(Color.white.opacity(0.08))
                 Capsule(style: .continuous)
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color.white.opacity(isDark ? 0.22 : 0.26),
-                                Color.white.opacity(isDark ? 0.07 : 0.09),
-                                Color.black.opacity(isDark ? 0.06 : 0.03)
+                                Color.white.opacity(0.22),
+                                Color.white.opacity(0.07),
+                                Color.black.opacity(0.06)
                             ],
                             startPoint: .top,
                             endPoint: .bottom
@@ -194,16 +193,16 @@ struct ContentView: View {
         }
         .overlay(
             Capsule(style: .continuous)
-                .stroke(Color.white.opacity(isDark ? 0.42 : 0.58), lineWidth: 1)
+                .stroke(Color.white.opacity(0.42), lineWidth: 1)
         )
         .overlay(alignment: .top) {
             Capsule(style: .continuous)
-                .fill(Color.white.opacity(isDark ? 0.32 : 0.48))
+                .fill(Color.white.opacity(0.32))
                 .frame(height: 1)
                 .padding(.horizontal, 20)
         }
         .clipShape(Capsule())
-        .shadow(color: .black.opacity(isDark ? 0.22 : 0.12), radius: 14, x: 0, y: 7)
+        .shadow(color: .black.opacity(0.22), radius: 14, x: 0, y: 7)
     }
     private var timerPage: some View {
         EmptyView()
@@ -310,7 +309,7 @@ struct ContentView: View {
 
     private var settingsModal: some View {
         ZStack {
-            Color.black.opacity(isDark ? 0.78 : 0.72)
+            Color.black.opacity(0.76)
                 .ignoresSafeArea()
                 .onTapGesture {
                     showSettings = false
@@ -410,16 +409,16 @@ struct ContentView: View {
             }
             .padding(18)
             .frame(width: 340)
-            .background(Color.black.opacity(isDark ? 0.66 : 0.58))
+            .background(Color.black.opacity(0.62))
             .clipShape(RoundedRectangle(cornerRadius: 24))
             .overlay(
                 RoundedRectangle(cornerRadius: 24)
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color.white.opacity(isDark ? 0.12 : 0.16),
-                                Color.white.opacity(isDark ? 0.04 : 0.06),
-                                Color.black.opacity(isDark ? 0.12 : 0.08)
+                                Color.white.opacity(0.12),
+                                Color.white.opacity(0.04),
+                                Color.black.opacity(0.12)
                             ],
                             startPoint: .top,
                             endPoint: .bottom
@@ -486,13 +485,13 @@ struct ContentView: View {
                 if page == target {
                     ZStack {
                         Capsule(style: .continuous)
-                            .fill(Color.white.opacity(isDark ? 0.12 : 0.16))
+                            .fill(Color.white.opacity(0.12))
                         Capsule(style: .continuous)
                             .fill(
                                 LinearGradient(
                                     colors: [
-                                        Color.white.opacity(isDark ? 0.26 : 0.32),
-                                        Color.white.opacity(isDark ? 0.07 : 0.10)
+                                        Color.white.opacity(0.26),
+                                        Color.white.opacity(0.07)
                                     ],
                                     startPoint: .top,
                                     endPoint: .bottom
@@ -506,7 +505,7 @@ struct ContentView: View {
                 Capsule()
                     .stroke(
                         page == target
-                            ? Color.white.opacity(isDark ? 0.42 : 0.62)
+                            ? Color.white.opacity(0.42)
                             : Color.clear,
                         lineWidth: 1
                     )
@@ -583,32 +582,6 @@ struct ContentView: View {
                 }
             }
         }
-    }
-
-    private func glassContainer<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        content()
-            .background(.ultraThinMaterial)
-            .background(panelTint)
-            .clipShape(RoundedRectangle(cornerRadius: 32))
-            .overlay(
-                RoundedRectangle(cornerRadius: 32)
-                    .stroke(Color.white.opacity(0.55), lineWidth: 1)
-            )
-            .overlay(alignment: .top) {
-                RoundedRectangle(cornerRadius: 32)
-                    .fill(Color.white.opacity(0.18))
-                    .frame(height: 1)
-                    .padding(.horizontal, 18)
-                    .padding(.top, 10)
-            }
-            .overlay(alignment: .bottom) {
-                RoundedRectangle(cornerRadius: 32)
-                    .fill(Color.black.opacity(0.08))
-                    .frame(height: 28)
-                    .blur(radius: 20)
-                    .offset(y: 10)
-            }
-            .shadow(color: .black.opacity(isDark ? 0.46 : 0.18), radius: 24, x: 0, y: 14)
     }
 
     private func format(seconds: Int) -> String {
