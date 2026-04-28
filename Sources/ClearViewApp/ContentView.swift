@@ -25,7 +25,7 @@ struct ContentView: View {
         static let timerCardHeight: CGFloat = 236
         static let cardPadding: CGFloat = 22
         static let sectionSpacing: CGFloat = 10
-        static let topTabHeight: CGFloat = 44
+        static let topTabHeight: CGFloat = 48
         static let displayHeight: CGFloat = 86
         static let functionHeight: CGFloat = 58
     }
@@ -638,7 +638,7 @@ struct ContentView: View {
             Text(title)
             // 关键流程：将每个分段按钮扩展为整段可点击，避免“只能点文字”。
             .frame(maxWidth: .infinity)
-            .font(.system(size: 13, weight: .semibold))
+            .font(.system(size: 15, weight: .semibold))
             .padding(.horizontal, 18)
             .padding(.vertical, 10)
             .foregroundStyle(page == target ? textPrimary : textSecondary)
