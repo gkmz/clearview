@@ -148,6 +148,10 @@ final class AppState: ObservableObject {
 
     func updateBackgroundImageEnabled(_ enabled: Bool) {
         useBackgroundImage = enabled
+        // 关键流程：无背景图时保留最低底色，避免主界面完全透明后文字失去承托。
+        if !enabled {
+            mainWindowOpacity = normalizedMainWindowOpacity(mainWindowOpacity, useBackgroundImage: false)
+        }
         statusText = enabled ? "背景图片已启用" : "背景图片已关闭"
         persistSettings()
     }
@@ -187,8 +191,8 @@ final class AppState: ObservableObject {
     }
 
     func updateMainWindowOpacity(_ value: Double) {
-        // 关键流程：限制透明度有效范围，避免极端值导致可读性崩溃。
-        mainWindowOpacity = min(max(value, 0.25), 1.0)
+        // 关键流程：有背景图时允许底色完全透明；无背景图时保留最低底色保证可读性。
+        mainWindowOpacity = normalizedMainWindowOpacity(value, useBackgroundImage: useBackgroundImage)
         statusText = "主界面透明度已调整"
         persistSettings()
     }
@@ -334,7 +338,7 @@ final class AppState: ObservableObject {
         shortcutKeyCode = settings.shortcutKeyCode
         shortcutModifierFlagsRaw = settings.shortcutModifierFlagsRaw
         backgroundImageOpacity = min(max(settings.backgroundImageOpacity, 0.25), 1.0)
-        mainWindowOpacity = min(max(settings.mainWindowOpacity, 0.25), 1.0)
+        mainWindowOpacity = normalizedMainWindowOpacity(settings.mainWindowOpacity, useBackgroundImage: useBackgroundImage)
         reminderWindowOpacity = min(max(settings.reminderWindowOpacity, 0.25), 1.0)
 
         // 关键流程：应用启动时恢复倒计时基础值，避免界面显示与配置不一致。
@@ -343,6 +347,11 @@ final class AppState: ObservableObject {
 
         // 关键流程：启动时恢复上次蓝光档位，让视觉状态连续。
         blueLightService.apply(level: filterLevel)
+    }
+
+    private func normalizedMainWindowOpacity(_ value: Double, useBackgroundImage: Bool) -> Double {
+        let minimumOpacity = useBackgroundImage ? 0.0 : 0.20
+        return min(max(value, minimumOpacity), 1.0)
     }
 
     private func persistSettings() {

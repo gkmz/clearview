@@ -33,6 +33,9 @@ struct ContentView: View {
     // 关键流程：背景图片仍按系统深浅色切换，但 UI 基底统一为黑色玻璃风格。
     private var isDark: Bool { colorScheme == .dark }
     private var mainOpacity: Double { appState.mainWindowOpacity }
+    private var settingsBackdropOpacity: Double {
+        appState.useBackgroundImage ? 0.76 * mainOpacity : 0.76
+    }
     private var textPrimary: Color { Color.white.opacity(0.96) }
     private var textSecondary: Color { Color.white.opacity(0.78) }
     private var selectedFill: Color { Color.white.opacity(0.24) }
@@ -304,7 +307,7 @@ struct ContentView: View {
 
     private var settingsModal: some View {
         ZStack {
-            Color.black.opacity(0.76)
+            Color.black.opacity(settingsBackdropOpacity)
                 .ignoresSafeArea()
                 .onTapGesture {
                     showSettings = false
@@ -440,7 +443,8 @@ struct ContentView: View {
                     value: Binding(
                         get: { appState.mainWindowOpacity },
                         set: { appState.updateMainWindowOpacity($0) }
-                    )
+                    ),
+                    range: appState.useBackgroundImage ? 0.0...1.0 : 0.20...1.0
                 )
 
                 opacitySettingRow(
@@ -533,7 +537,11 @@ struct ContentView: View {
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
-    private func opacitySettingRow(title: String, value: Binding<Double>) -> some View {
+    private func opacitySettingRow(
+        title: String,
+        value: Binding<Double>,
+        range: ClosedRange<Double> = 0.25...1.0
+    ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text(title)
@@ -544,7 +552,7 @@ struct ContentView: View {
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(textSecondary)
             }
-            WhiteOpacitySlider(value: value, range: 0.25...1.0, step: 0.01)
+            WhiteOpacitySlider(value: value, range: range, step: 0.01)
         }
         .padding(10)
         .background(Color.white.opacity(0.08))
