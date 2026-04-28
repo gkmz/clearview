@@ -149,15 +149,15 @@ struct ContentView: View {
 
     private var quoteFooter: some View {
         VStack(spacing: 6) {
-            StableText("慢慢眨眼，看看远方，给视力一点缓冲。", size: 14, weight: .medium, alpha: 0.88)
+            StableText(AppCopy.Footer.caringLine, size: 14, weight: .medium, alpha: 0.88)
                 .frame(height: 20)
         }
     }
 
     private var topTabs: some View {
         HStack {
-            tabButton(title: "休息", page: .timer)
-            tabButton(title: "护眼", page: .filter)
+            tabButton(title: AppCopy.Tab.eyeRelax, page: .timer)
+            tabButton(title: AppCopy.Tab.eyeCare, page: .filter)
         }
         .padding(6)
         // 关键流程：透明面板内的系统毛玻璃会变白，这里改用低透明手工叠层，保证背景图直接透出。

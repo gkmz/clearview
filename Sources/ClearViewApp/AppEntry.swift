@@ -174,7 +174,7 @@ final class AppState: ObservableObject {
 
     func completeBreak() {
         endReminderFlow()
-        statusText = "眼睛放松好了"
+        statusText = AppCopy.Status.finished
         reminderService.start(intervalMinutes: workIntervalMinutes)
     }
 
@@ -200,7 +200,7 @@ final class AppState: ObservableObject {
         // 关键流程：先给用户 5 秒反应时间，再进入正式休息倒计时。
         reminderPhase = .preparing
         breakSecondsLeft = preparationSeconds
-        statusText = "准备放松眼睛"
+        statusText = AppCopy.Status.preparing
         NSApplication.shared.activate(ignoringOtherApps: true)
         reminderPanel?.show()
         startPreparationCountdown()
@@ -216,7 +216,7 @@ final class AppState: ObservableObject {
                 if self.breakSecondsLeft <= 0 {
                     self.reminderPhase = .resting
                     self.breakSecondsLeft = self.breakDurationSeconds
-                    self.statusText = "看看远方吧"
+                    self.statusText = AppCopy.Status.resting
                     self.reminderPanel?.refresh()
                     self.breakCountdownTimer?.invalidate()
                     self.breakCountdownTimer = nil
@@ -243,7 +243,7 @@ final class AppState: ObservableObject {
                     // 关键流程：休息倒计时结束后不自动关闭浮窗，等待用户点击继续按钮。
                     self.reminderPhase = .completed
                     self.breakSecondsLeft = 0
-                    self.statusText = "休息好了"
+                    self.statusText = AppCopy.Status.completed
                     self.reminderPanel?.refresh()
                     if self.playBreakFinishedSound {
                         // 关键流程：用户可能正在看远方，结束时可选用短促声音温柔提醒可以回来了。

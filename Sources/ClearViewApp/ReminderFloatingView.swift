@@ -93,11 +93,11 @@ struct ReminderFloatingView: View {
     private var titleView: some View {
         switch appState.reminderPhase {
         case .preparing:
-            titleTextView("休息时间到了，准备好了吗？")
+            titleTextView(AppCopy.ReminderPopup.preparingTitle)
         case .completed:
-            titleTextView("很好，记得坚持下去")
+            titleTextView(AppCopy.ReminderPopup.completedTitle)
         default:
-            titleTextView("看看远方，让眼睛放松一下")
+            titleTextView(AppCopy.ReminderPopup.restingTitle)
         }
     }
 
@@ -109,11 +109,11 @@ struct ReminderFloatingView: View {
     private var messageText: String {
         switch appState.reminderPhase {
         case .preparing:
-            return "先停一停，把视线慢慢移开屏幕。"
+            return AppCopy.ReminderPopup.preparingMessage
         case .completed:
-            return "慢慢回来，保持节奏。"
+            return AppCopy.ReminderPopup.completedMessage
         default:
-            return "慢慢眨眼，给视力一点缓冲。"
+            return AppCopy.ReminderPopup.restingMessage
         }
     }
 
@@ -145,9 +145,9 @@ struct ReminderFloatingView: View {
     private func helpText(for systemName: String) -> String {
         switch systemName {
         case "clock.arrow.circlepath":
-            return "稍后提醒"
+            return AppCopy.ReminderPopup.snoozeHelp
         case "play.fill":
-            return "休息好了"
+            return AppCopy.ReminderPopup.doneHelp
         default:
             return "操作"
         }
