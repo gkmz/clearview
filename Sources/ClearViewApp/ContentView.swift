@@ -33,9 +33,6 @@ struct ContentView: View {
     // 关键流程：背景图片仍按系统深浅色切换，但 UI 基底统一为黑色玻璃风格。
     private var isDark: Bool { colorScheme == .dark }
     private var mainOpacity: Double { appState.mainWindowOpacity }
-    private var settingsBackdropOpacity: Double {
-        appState.useBackgroundImage ? 0.76 * mainOpacity : 0.76
-    }
     private var textPrimary: Color { Color.white.opacity(0.96) }
     private var textSecondary: Color { Color.white.opacity(0.78) }
     private var selectedFill: Color { Color.white.opacity(0.24) }
@@ -69,10 +66,6 @@ struct ContentView: View {
                 .padding(.bottom, 28)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
 
-            if showSettings {
-                settingsModal
-                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
-            }
         }
         .frame(minWidth: 920, minHeight: 540)
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
@@ -81,7 +74,6 @@ struct ContentView: View {
                 .stroke(Color.white.opacity(0.22), lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.18), radius: 18, x: 0, y: 10)
-        .animation(.easeInOut(duration: 0.18), value: showSettings)
         .onReceive(Timer.publish(every: 30, on: .main, in: .common).autoconnect()) { value in
             now = value
         }
@@ -291,9 +283,7 @@ struct ContentView: View {
                 systemName: "gearshape",
                 help: "调整节奏"
             ) {
-                withAnimation(.easeInOut(duration: 0.18)) {
-                    showSettings.toggle()
-                }
+                appState.toggleSettingsPanel()
             }
 
             bottomIconButton(
@@ -313,8 +303,10 @@ struct ContentView: View {
 
     private var settingsModal: some View {
         ZStack {
-            Color.black.opacity(settingsBackdropOpacity)
+            // 关键流程：透明点击层只负责点外部关闭，不再压暗主界面背景，减少透明窗口合成闪烁。
+            Color.clear
                 .ignoresSafeArea()
+                .contentShape(Rectangle())
                 .onTapGesture {
                     showSettings = false
                 }

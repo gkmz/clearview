@@ -6,6 +6,14 @@ final class MainPanelController {
     private weak var appState: AppState?
     private var panel: NSPanel?
 
+    var frame: NSRect? {
+        panel?.frame
+    }
+
+    var isVisible: Bool {
+        panel?.isVisible == true
+    }
+
     init(appState: AppState) {
         self.appState = appState
     }

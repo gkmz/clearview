@@ -53,6 +53,7 @@ final class AppState: ObservableObject {
     private var breakCountdownTimer: Timer?
     private var mainPanel: MainPanelController?
     private var reminderPanel: ReminderPanelController?
+    private var settingsPanel: SettingsPanelController?
 
     init() {
         loadSettings()
@@ -113,6 +114,7 @@ final class AppState: ObservableObject {
         }
         mainPanel = MainPanelController(appState: self)
         reminderPanel = ReminderPanelController(appState: self)
+        settingsPanel = SettingsPanelController(appState: self)
     }
 
     func showMainPanel() {
@@ -120,11 +122,23 @@ final class AppState: ObservableObject {
     }
 
     func toggleMainPanel() {
+        if mainPanel?.isVisible == true {
+            settingsPanel?.hide()
+        }
         mainPanel?.toggle()
     }
 
     func hideMainPanel() {
+        settingsPanel?.hide()
         mainPanel?.hide()
+    }
+
+    func toggleSettingsPanel() {
+        settingsPanel?.toggle(anchoredTo: mainPanel?.frame)
+    }
+
+    func hideSettingsPanel() {
+        settingsPanel?.hide()
     }
 
     func setMainPanelMovableByBackground(_ isMovable: Bool) {
