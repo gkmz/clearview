@@ -51,6 +51,7 @@ struct AppSettings: Codable {
     var backgroundImageOpacity: Double
     var mainWindowOpacity: Double
     var reminderWindowOpacity: Double
+    var settingsWindowOpacity: Double
 
     static let `default` = AppSettings(
         reminderEnabled: true,
@@ -69,7 +70,8 @@ struct AppSettings: Codable {
         shortcutCycleBlueLightLevelModifierFlagsRaw: ShortcutAction.cycleBlueLightLevel.defaultBinding.modifierFlagsRaw,
         backgroundImageOpacity: 1.0,
         mainWindowOpacity: 0.80,
-        reminderWindowOpacity: 0.78
+        reminderWindowOpacity: 0.78,
+        settingsWindowOpacity: 0.78
     )
 
     enum CodingKeys: String, CodingKey {
@@ -90,6 +92,7 @@ struct AppSettings: Codable {
         case backgroundImageOpacity
         case mainWindowOpacity
         case reminderWindowOpacity
+        case settingsWindowOpacity
     }
 
     init(
@@ -109,7 +112,8 @@ struct AppSettings: Codable {
         shortcutCycleBlueLightLevelModifierFlagsRaw: UInt,
         backgroundImageOpacity: Double,
         mainWindowOpacity: Double,
-        reminderWindowOpacity: Double
+        reminderWindowOpacity: Double,
+        settingsWindowOpacity: Double
     ) {
         self.reminderEnabled = reminderEnabled
         self.workIntervalMinutes = workIntervalMinutes
@@ -128,6 +132,7 @@ struct AppSettings: Codable {
         self.backgroundImageOpacity = backgroundImageOpacity
         self.mainWindowOpacity = mainWindowOpacity
         self.reminderWindowOpacity = reminderWindowOpacity
+        self.settingsWindowOpacity = settingsWindowOpacity
     }
 
     init(from decoder: Decoder) throws {
@@ -155,6 +160,7 @@ struct AppSettings: Codable {
         backgroundImageOpacity = try container.decodeIfPresent(Double.self, forKey: .backgroundImageOpacity) ?? defaults.backgroundImageOpacity
         mainWindowOpacity = try container.decodeIfPresent(Double.self, forKey: .mainWindowOpacity) ?? defaults.mainWindowOpacity
         reminderWindowOpacity = try container.decodeIfPresent(Double.self, forKey: .reminderWindowOpacity) ?? defaults.reminderWindowOpacity
+        settingsWindowOpacity = try container.decodeIfPresent(Double.self, forKey: .settingsWindowOpacity) ?? defaults.settingsWindowOpacity
     }
 }
 

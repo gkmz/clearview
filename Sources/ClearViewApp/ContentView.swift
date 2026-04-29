@@ -294,6 +294,10 @@ struct ContentView: View {
                 appState.triggerTestReminderNow()
             }
 
+            bottomIconButton(systemName: "info.circle", help: "关于 ClearView") {
+                appState.showAboutPanel()
+            }
+
             bottomIconButton(systemName: "power", help: "隐藏主界面") {
                 appState.hideMainPanel()
             }

@@ -100,9 +100,14 @@ private struct SettingsPanelView: View {
 
     private var isDark: Bool { colorScheme == .dark }
     private var textPrimary: Color { Color.white.opacity(0.96) }
-    private var textSecondary: Color { Color.white.opacity(0.78) }
+    private var textSecondary:
+     Color { Color.white.opacity(0.78) }
     private var buttonTint: Color { Color.white.opacity(0.20) }
     private var buttonBorder: Color { Color.white.opacity(0.22) }
+    private var panelFill: Color {
+        // 关键流程：设置为 100% 时必须真正不透明，避免滑杆语义和视觉效果不一致。
+        Color.black.opacity(appState.settingsWindowOpacity)
+    }
 
     var body: some View {
         ZStack {
@@ -155,7 +160,7 @@ private struct SettingsPanelView: View {
                 .frame(width: 340)
                 .frame(maxHeight: maxModalHeight)
                 .fixedSize(horizontal: false, vertical: true)
-                .background(Color.black.opacity(0.62))
+                .background(panelFill)
                 .clipShape(RoundedRectangle(cornerRadius: 24))
                 .overlay(
                     RoundedRectangle(cornerRadius: 24)
@@ -246,6 +251,14 @@ private struct SettingsPanelView: View {
                     value: Binding(
                         get: { appState.reminderWindowOpacity },
                         set: { appState.updateReminderWindowOpacity($0) }
+                    )
+                )
+
+                opacitySettingRow(
+                    title: "设置/关于窗透明度",
+                    value: Binding(
+                        get: { appState.settingsWindowOpacity },
+                        set: { appState.updateSettingsWindowOpacity($0) }
                     )
                 )
             }

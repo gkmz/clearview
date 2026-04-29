@@ -41,6 +41,7 @@ final class AppState: ObservableObject {
     @Published var backgroundImageOpacity: Double = 1.0
     @Published var mainWindowOpacity: Double = 0.80
     @Published var reminderWindowOpacity: Double = 0.78
+    @Published var settingsWindowOpacity: Double = 0.78
     @Published var statusText: String = "陪你护眼"
     @Published var reminderPhase: ReminderPhase = .none
     @Published var breakSecondsLeft: Int = 20
@@ -54,6 +55,7 @@ final class AppState: ObservableObject {
     private var mainPanel: MainPanelController?
     private var reminderPanel: ReminderPanelController?
     private var settingsPanel: SettingsPanelController?
+    private var aboutPanel: AboutPanelController?
 
     init() {
         loadSettings()
@@ -93,7 +95,7 @@ final class AppState: ObservableObject {
         ) { [weak self] in
             Task { @MainActor in
                 guard let self else { return }
-                self.toggleReminder(!self.reminderEnabled)
+                self.toggleReminderFromShortcut()
             }
         }
         let cycleFilterShortcutRegistered = shortcutManager.configure(
@@ -115,6 +117,7 @@ final class AppState: ObservableObject {
         mainPanel = MainPanelController(appState: self)
         reminderPanel = ReminderPanelController(appState: self)
         settingsPanel = SettingsPanelController(appState: self)
+        aboutPanel = AboutPanelController(appState: self)
     }
 
     func showMainPanel() {
@@ -124,12 +127,14 @@ final class AppState: ObservableObject {
     func toggleMainPanel() {
         if mainPanel?.isVisible == true {
             settingsPanel?.hide()
+            aboutPanel?.hide()
         }
         mainPanel?.toggle()
     }
 
     func hideMainPanel() {
         settingsPanel?.hide()
+        aboutPanel?.hide()
         mainPanel?.hide()
     }
 
@@ -139,6 +144,14 @@ final class AppState: ObservableObject {
 
     func hideSettingsPanel() {
         settingsPanel?.hide()
+    }
+
+    func showAboutPanel() {
+        aboutPanel?.show(anchoredTo: mainPanel?.frame)
+    }
+
+    func hideAboutPanel() {
+        aboutPanel?.hide()
     }
 
     func setMainPanelMovableByBackground(_ isMovable: Bool) {
@@ -155,6 +168,16 @@ final class AppState: ObservableObject {
             statusText = "先不打扰"
         }
         persistSettings()
+    }
+
+    func toggleReminderFromShortcut() {
+        // 关键流程：舒眼完成后，快捷键应等价于点击“继续”，关闭提醒窗并重新开始计时。
+        if reminderPhase == .completed {
+            completeBreak()
+            return
+        }
+
+        toggleReminder(!reminderEnabled)
     }
 
     func updateInterval(_ minutes: Int) {
@@ -301,6 +324,13 @@ final class AppState: ObservableObject {
         persistSettings()
     }
 
+    func updateSettingsWindowOpacity(_ value: Double) {
+        // 关键流程：设置窗和关于窗共用同一透明度，保持辅助面板视觉一致。
+        settingsWindowOpacity = min(max(value, 0.25), 1.0)
+        statusText = "设置/关于窗透明度已调整"
+        persistSettings()
+    }
+
     func cycleBlueLightLevel() {
         let levels = BlueLightLevel.allCases
         guard let currentIndex = levels.firstIndex(of: filterLevel) else {
@@ -327,9 +357,11 @@ final class AppState: ObservableObject {
     }
 
     func completeBreak() {
+        reminderEnabled = true
         endReminderFlow()
         statusText = AppCopy.Status.finished
         reminderService.start(intervalMinutes: workIntervalMinutes)
+        persistSettings()
     }
 
     func skipBreak() {
@@ -445,6 +477,7 @@ final class AppState: ObservableObject {
         backgroundImageOpacity = min(max(settings.backgroundImageOpacity, 0.25), 1.0)
         mainWindowOpacity = normalizedMainWindowOpacity(settings.mainWindowOpacity, useBackgroundImage: useBackgroundImage)
         reminderWindowOpacity = min(max(settings.reminderWindowOpacity, 0.25), 1.0)
+        settingsWindowOpacity = min(max(settings.settingsWindowOpacity, 0.25), 1.0)
 
         // 关键流程：应用启动时恢复倒计时基础值，避免界面显示与配置不一致。
         secondsUntilBreak = workIntervalMinutes * 60
@@ -477,7 +510,8 @@ final class AppState: ObservableObject {
             shortcutCycleBlueLightLevelModifierFlagsRaw: cycleFilterShortcutModifierFlagsRaw,
             backgroundImageOpacity: backgroundImageOpacity,
             mainWindowOpacity: mainWindowOpacity,
-            reminderWindowOpacity: reminderWindowOpacity
+            reminderWindowOpacity: reminderWindowOpacity,
+            settingsWindowOpacity: settingsWindowOpacity
         )
         settingsStore.save(settings)
     }
