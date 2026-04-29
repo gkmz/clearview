@@ -156,7 +156,8 @@ final class GlobalShortcutManager {
     private let actionByHotKeyID: [UInt32: ShortcutAction] = [
         1: .toggleMainPanel,
         2: .toggleReminder,
-        3: .cycleBlueLightLevel
+        3: .cycleBlueLightLevel,
+        4: .snoozeReminder
     ]
 
     private static let functionKeyNames: [UInt16: String] = [
@@ -189,6 +190,7 @@ private extension ShortcutAction {
         case .toggleMainPanel: return 1
         case .toggleReminder: return 2
         case .cycleBlueLightLevel: return 3
+        case .snoozeReminder: return 4
         }
     }
 }

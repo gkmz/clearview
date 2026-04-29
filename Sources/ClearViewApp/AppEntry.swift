@@ -36,6 +36,8 @@ final class AppState: ObservableObject {
     @Published var shortcutModifierFlagsRaw: UInt = 1_179_648
     @Published var reminderToggleShortcutKeyCode: UInt16 = 35
     @Published var reminderToggleShortcutModifierFlagsRaw: UInt = 1_179_648
+    @Published var snoozeReminderShortcutKeyCode: UInt16 = 1
+    @Published var snoozeReminderShortcutModifierFlagsRaw: UInt = 1_179_648
     @Published var cycleFilterShortcutKeyCode: UInt16 = 37
     @Published var cycleFilterShortcutModifierFlagsRaw: UInt = 1_179_648
     @Published var backgroundImageOpacity: Double = 1.0
@@ -107,12 +109,23 @@ final class AppState: ObservableObject {
                 self?.cycleBlueLightLevel()
             }
         }
+        let snoozeReminderShortcutRegistered = shortcutManager.configure(
+            action: .snoozeReminder,
+            keyCode: snoozeReminderShortcutKeyCode,
+            modifierFlagsRaw: snoozeReminderShortcutModifierFlagsRaw
+        ) { [weak self] in
+            Task { @MainActor in
+                self?.snoozeReminderFromShortcut()
+            }
+        }
         if !mainPanelShortcutRegistered {
             statusText = "主界面快捷键注册失败，请在设置中重新选择"
         } else if !reminderToggleShortcutRegistered {
             statusText = "暂停提醒快捷键注册失败，请在设置中重新选择"
         } else if !cycleFilterShortcutRegistered {
             statusText = "护眼模式快捷键注册失败，请在设置中重新选择"
+        } else if !snoozeReminderShortcutRegistered {
+            statusText = "稍后提醒快捷键注册失败，请在设置中重新选择"
         }
         mainPanel = MainPanelController(appState: self)
         reminderPanel = ReminderPanelController(appState: self)
@@ -178,6 +191,12 @@ final class AppState: ObservableObject {
         }
 
         toggleReminder(!reminderEnabled)
+    }
+
+    func snoozeReminderFromShortcut() {
+        // 关键流程：稍后提醒只处理当前正在展示的提醒窗，避免在平时误改计时节奏。
+        guard reminderPhase == .preparing || reminderPhase == .resting else { return }
+        snoozeBreak(minutes: 5)
     }
 
     func updateInterval(_ minutes: Int) {
@@ -274,6 +293,8 @@ final class AppState: ObservableObject {
             return ShortcutBinding(keyCode: shortcutKeyCode, modifierFlagsRaw: shortcutModifierFlagsRaw)
         case .toggleReminder:
             return ShortcutBinding(keyCode: reminderToggleShortcutKeyCode, modifierFlagsRaw: reminderToggleShortcutModifierFlagsRaw)
+        case .snoozeReminder:
+            return ShortcutBinding(keyCode: snoozeReminderShortcutKeyCode, modifierFlagsRaw: snoozeReminderShortcutModifierFlagsRaw)
         case .cycleBlueLightLevel:
             return ShortcutBinding(keyCode: cycleFilterShortcutKeyCode, modifierFlagsRaw: cycleFilterShortcutModifierFlagsRaw)
         }
@@ -287,6 +308,9 @@ final class AppState: ObservableObject {
         case .toggleReminder:
             reminderToggleShortcutKeyCode = binding.keyCode
             reminderToggleShortcutModifierFlagsRaw = binding.modifierFlagsRaw
+        case .snoozeReminder:
+            snoozeReminderShortcutKeyCode = binding.keyCode
+            snoozeReminderShortcutModifierFlagsRaw = binding.modifierFlagsRaw
         case .cycleBlueLightLevel:
             cycleFilterShortcutKeyCode = binding.keyCode
             cycleFilterShortcutModifierFlagsRaw = binding.modifierFlagsRaw
@@ -472,6 +496,8 @@ final class AppState: ObservableObject {
         shortcutModifierFlagsRaw = settings.shortcutToggleMainPanelModifierFlagsRaw
         reminderToggleShortcutKeyCode = settings.shortcutToggleReminderKeyCode
         reminderToggleShortcutModifierFlagsRaw = settings.shortcutToggleReminderModifierFlagsRaw
+        snoozeReminderShortcutKeyCode = settings.shortcutSnoozeReminderKeyCode
+        snoozeReminderShortcutModifierFlagsRaw = settings.shortcutSnoozeReminderModifierFlagsRaw
         cycleFilterShortcutKeyCode = settings.shortcutCycleBlueLightLevelKeyCode
         cycleFilterShortcutModifierFlagsRaw = settings.shortcutCycleBlueLightLevelModifierFlagsRaw
         backgroundImageOpacity = min(max(settings.backgroundImageOpacity, 0.25), 1.0)
@@ -506,6 +532,8 @@ final class AppState: ObservableObject {
             shortcutToggleMainPanelModifierFlagsRaw: shortcutModifierFlagsRaw,
             shortcutToggleReminderKeyCode: reminderToggleShortcutKeyCode,
             shortcutToggleReminderModifierFlagsRaw: reminderToggleShortcutModifierFlagsRaw,
+            shortcutSnoozeReminderKeyCode: snoozeReminderShortcutKeyCode,
+            shortcutSnoozeReminderModifierFlagsRaw: snoozeReminderShortcutModifierFlagsRaw,
             shortcutCycleBlueLightLevelKeyCode: cycleFilterShortcutKeyCode,
             shortcutCycleBlueLightLevelModifierFlagsRaw: cycleFilterShortcutModifierFlagsRaw,
             backgroundImageOpacity: backgroundImageOpacity,
