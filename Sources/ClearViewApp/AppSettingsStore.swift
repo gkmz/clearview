@@ -65,7 +65,7 @@ struct AppSettings: Codable {
         workIntervalMinutes: 20,
         breakDurationSeconds: 20,
         filterLevelKey: "off",
-        useBackgroundImage: false,
+        useBackgroundImage: true,
         playBreakFinishedSound: false,
         shortcutKeyCode: ShortcutAction.toggleMainPanel.defaultBinding.keyCode,
         shortcutModifierFlagsRaw: ShortcutAction.toggleMainPanel.defaultBinding.modifierFlagsRaw,
