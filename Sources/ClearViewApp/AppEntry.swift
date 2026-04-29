@@ -505,6 +505,7 @@ final class ReminderPanelController {
         }
 
         positionAtTopCenter()
+        applyPanelCornerMask()
         // 关键流程：用较高层级的独立面板前置，避免被 MenuBarExtra 菜单窗口吞掉。
         panel?.orderFrontRegardless()
         panel?.makeKey()
@@ -515,6 +516,7 @@ final class ReminderPanelController {
         // 关键流程：透明 NSPanel 复用同一个 SwiftUI 图层时，阶段切换可能留下上一帧残影。
         // 这里直接重建 HostingView，让 AppKit 清空透明缓冲区后再绘制当前状态。
         panel.contentView = makeHostingView(appState: appState)
+        applyPanelCornerMask()
         panel.contentView?.needsDisplay = true
         panel.displayIfNeeded()
         panel.invalidateShadow()
@@ -560,6 +562,14 @@ final class ReminderPanelController {
         // 关键流程：放大后的提示窗仍保持顶部居中，并留出呼吸空间避免贴近菜单栏。
         let y = visibleFrame.maxY - height - 90
         panel.setFrame(NSRect(x: x, y: y, width: width, height: height), display: true)
+    }
+
+    private func applyPanelCornerMask() {
+        guard let panel, let contentView = panel.contentView else { return }
+        contentView.wantsLayer = true
+        contentView.layer?.cornerRadius = 20
+        contentView.layer?.cornerCurve = .continuous
+        contentView.layer?.masksToBounds = true
     }
 }
 

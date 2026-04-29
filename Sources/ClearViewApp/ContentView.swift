@@ -75,6 +75,12 @@ struct ContentView: View {
             }
         }
         .frame(minWidth: 920, minHeight: 540)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color.white.opacity(0.22), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.18), radius: 18, x: 0, y: 10)
         .animation(.easeInOut(duration: 0.18), value: showSettings)
         .onReceive(Timer.publish(every: 30, on: .main, in: .common).autoconnect()) { value in
             now = value

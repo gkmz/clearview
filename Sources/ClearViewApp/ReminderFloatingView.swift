@@ -69,26 +69,26 @@ struct ReminderFloatingView: View {
 
     private var panelBackground: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 26)
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .fill(panelFill)
 
-            RoundedRectangle(cornerRadius: 26)
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .fill(
                     LinearGradient(
                         colors: [
-                            Color.white.opacity(isDark ? 0.08 : 0.18),
-                            Color.white.opacity(isDark ? 0.02 : 0.04),
-                            Color.black.opacity(isDark ? 0.12 : 0.06)
+                            Color.white.opacity(isDark ? 0.06 : 0.12),
+                            Color.white.opacity(isDark ? 0.02 : 0.03),
+                            Color.black.opacity(isDark ? 0.08 : 0.04)
                         ],
                         startPoint: .top,
                         endPoint: .bottom
                     )
                 )
 
-            RoundedRectangle(cornerRadius: 26)
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .stroke(panelBorder, lineWidth: 1)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 26))
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .allowsHitTesting(false)
     }
 
