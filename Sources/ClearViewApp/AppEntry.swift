@@ -81,6 +81,7 @@ final class AppState: ObservableObject {
         } else {
             reminderService.stop()
         }
+        // 应用启动时集中注册所有全局快捷键，若任一失败立即反馈给用户。
         let mainPanelShortcutRegistered = shortcutManager.configure(
             action: .toggleMainPanel,
             keyCode: shortcutKeyCode,
@@ -184,17 +185,18 @@ final class AppState: ObservableObject {
     }
 
     func toggleReminderFromShortcut() {
-        // 关键流程：舒眼完成后，快捷键应等价于点击“继续”，关闭提醒窗并重新开始计时。
+        // 舒眼完成后，快捷键应等价于点击“继续”，关闭提醒窗并重新开始计时。
         if reminderPhase == .completed {
             completeBreak()
             return
         }
 
+        // 非提醒弹窗阶段保持原有语义，作为“全局提醒开关”切换。
         toggleReminder(!reminderEnabled)
     }
 
     func snoozeReminderFromShortcut() {
-        // 关键流程：稍后提醒只处理当前正在展示的提醒窗，避免在平时误改计时节奏。
+        // 稍后提醒只处理当前正在展示的提醒窗，避免在平时误改计时节奏。
         guard reminderPhase == .preparing || reminderPhase == .resting else { return }
         snoozeBreak(minutes: 5)
     }
@@ -224,7 +226,7 @@ final class AppState: ObservableObject {
 
     func applyFilter(_ level: BlueLightLevel) {
         filterLevel = level
-        // 关键流程：蓝光档位切换时立即应用到所有可用显示器。
+        // 蓝光档位切换时立即应用到所有可用显示器。
         blueLightService.apply(level: level)
         statusText = "护眼：\(level.title)"
         persistSettings()
@@ -232,7 +234,7 @@ final class AppState: ObservableObject {
 
     func updateBackgroundImageEnabled(_ enabled: Bool) {
         useBackgroundImage = enabled
-        // 关键流程：无背景图时保留最低底色，避免主界面完全透明后文字失去承托。
+        // 无背景图时保留最低底色，避免主界面完全透明后文字失去承托。
         if !enabled {
             mainWindowOpacity = normalizedMainWindowOpacity(mainWindowOpacity, useBackgroundImage: false)
         }
@@ -247,7 +249,7 @@ final class AppState: ObservableObject {
     }
 
     func updateShortcut(action: ShortcutAction, keyCode: UInt16, modifierFlagsRaw: UInt) {
-        // 关键流程：普通按键至少需要一个修饰键；F1-F20 这类功能键允许单独作为全局快捷键。
+        // 普通按键至少需要一个修饰键；F1-F20 这类功能键允许单独作为全局快捷键。
         let flags = NSEvent.ModifierFlags(rawValue: modifierFlagsRaw)
             .intersection([.command, .shift, .option, .control])
         guard !flags.isEmpty || GlobalShortcutManager.isFunctionKey(keyCode) else {
@@ -329,7 +331,7 @@ final class AppState: ObservableObject {
     }
 
     func updateMainWindowOpacity(_ value: Double) {
-        // 关键流程：有背景图时允许底色完全透明；无背景图时保留最低底色保证可读性。
+        // 有背景图时允许底色完全透明；无背景图时保留最低底色保证可读性。
         mainWindowOpacity = normalizedMainWindowOpacity(value, useBackgroundImage: useBackgroundImage)
         statusText = "主界面透明度已调整"
         persistSettings()
@@ -342,14 +344,14 @@ final class AppState: ObservableObject {
     }
 
     func updateReminderWindowOpacity(_ value: Double) {
-        // 关键流程：提示窗透明度单独可调，兼顾提醒可见性与通透感。
+        // 提示窗透明度单独可调，兼顾提醒可见性与通透感。
         reminderWindowOpacity = min(max(value, 0.25), 1.0)
         statusText = "提示窗透明度已调整"
         persistSettings()
     }
 
     func updateSettingsWindowOpacity(_ value: Double) {
-        // 关键流程：设置窗和关于窗共用同一透明度，保持辅助面板视觉一致。
+        // 设置窗和关于窗共用同一透明度，保持辅助面板视觉一致。
         settingsWindowOpacity = min(max(value, 0.25), 1.0)
         statusText = "设置/关于窗透明度已调整"
         persistSettings()
@@ -401,13 +403,13 @@ final class AppState: ObservableObject {
     }
 
     func quitApplication() {
-        // 关键流程：退出前恢复显示色彩，避免蓝光过滤状态残留。
+        // 退出前恢复显示色彩，避免蓝光过滤状态残留。
         blueLightService.apply(level: .off)
         NSApplication.shared.terminate(nil)
     }
 
     private func startReminderFlow() {
-        // 关键流程：先给用户 5 秒反应时间，再进入正式休息倒计时。
+        // 先给用户 5 秒反应时间，再进入正式休息倒计时。
         reminderPhase = .preparing
         breakSecondsLeft = preparationSeconds
         statusText = AppCopy.Status.preparing
@@ -432,7 +434,7 @@ final class AppState: ObservableObject {
                     self.breakCountdownTimer = nil
                     self.startBreakCountdown()
                 } else {
-                    // 关键流程：透明提示窗中的大号倒计时每秒变化时，重建内容视图以彻底清空上一帧数字残影。
+                    // 透明提示窗中的大号倒计时每秒变化时，重建内容视图以彻底清空上一帧数字残影。
                     self.reminderPanel?.refresh()
                 }
             }
@@ -450,19 +452,19 @@ final class AppState: ObservableObject {
                 guard self.reminderPhase == .resting else { return }
                 self.breakSecondsLeft -= 1
                 if self.breakSecondsLeft <= 0 {
-                    // 关键流程：休息倒计时结束后不自动关闭浮窗，等待用户点击继续按钮。
+                    // 休息倒计时结束后不自动关闭浮窗，等待用户点击继续按钮。
                     self.reminderPhase = .completed
                     self.breakSecondsLeft = 0
                     self.statusText = AppCopy.Status.completed
                     self.reminderPanel?.refresh()
                     if self.playBreakFinishedSound {
-                        // 关键流程：用户可能正在看远方，结束时可选用短促声音温柔提醒可以回来了。
+                        // 用户可能正在看远方，结束时可选用短促声音温柔提醒可以回来了。
                         self.playBreakFinishedSoundEffect()
                     }
                     self.breakCountdownTimer?.invalidate()
                     self.breakCountdownTimer = nil
                 } else {
-                    // 关键流程：透明提示窗中的大号倒计时每秒变化时，重建内容视图以彻底清空上一帧数字残影。
+                    // 透明提示窗中的大号倒计时每秒变化时，重建内容视图以彻底清空上一帧数字残影。
                     self.reminderPanel?.refresh()
                 }
             }
@@ -492,6 +494,7 @@ final class AppState: ObservableObject {
         filterLevel = BlueLightLevel.fromSettingsKey(settings.filterLevelKey)
         useBackgroundImage = settings.useBackgroundImage
         playBreakFinishedSound = settings.playBreakFinishedSound
+        // 新字段优先，旧字段只作为解码阶段的回退；这里统一使用新字段赋值到运行时状态。
         shortcutKeyCode = settings.shortcutToggleMainPanelKeyCode
         shortcutModifierFlagsRaw = settings.shortcutToggleMainPanelModifierFlagsRaw
         reminderToggleShortcutKeyCode = settings.shortcutToggleReminderKeyCode
@@ -505,11 +508,11 @@ final class AppState: ObservableObject {
         reminderWindowOpacity = min(max(settings.reminderWindowOpacity, 0.25), 1.0)
         settingsWindowOpacity = min(max(settings.settingsWindowOpacity, 0.25), 1.0)
 
-        // 关键流程：应用启动时恢复倒计时基础值，避免界面显示与配置不一致。
+        // 应用启动时恢复倒计时基础值，避免界面显示与配置不一致。
         secondsUntilBreak = workIntervalMinutes * 60
         breakSecondsLeft = breakDurationSeconds
 
-        // 关键流程：启动时恢复上次蓝光档位，让视觉状态连续。
+        // 启动时恢复上次蓝光档位，让视觉状态连续。
         blueLightService.apply(level: filterLevel)
     }
 
@@ -528,6 +531,7 @@ final class AppState: ObservableObject {
             playBreakFinishedSound: playBreakFinishedSound,
             shortcutKeyCode: shortcutKeyCode,
             shortcutModifierFlagsRaw: shortcutModifierFlagsRaw,
+            // 写回时同步保留旧字段，确保未来回滚到旧版本时仍能读取到主快捷键。
             shortcutToggleMainPanelKeyCode: shortcutKeyCode,
             shortcutToggleMainPanelModifierFlagsRaw: shortcutModifierFlagsRaw,
             shortcutToggleReminderKeyCode: reminderToggleShortcutKeyCode,
@@ -572,7 +576,7 @@ final class ReminderPanelController {
             newPanel.hidesOnDeactivate = false
             newPanel.ignoresMouseEvents = false
             newPanel.isMovableByWindowBackground = true
-            // 关键流程：提醒浮窗需要跨桌面显示；canJoinAllSpaces 与 moveToActiveSpace 互斥，不能同时设置。
+            // 提醒浮窗需要跨桌面显示；canJoinAllSpaces 与 moveToActiveSpace 互斥，不能同时设置。
             newPanel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
             newPanel.isReleasedWhenClosed = false
             panel = newPanel
@@ -582,14 +586,14 @@ final class ReminderPanelController {
 
         positionAtTopCenter()
         applyPanelCornerMask()
-        // 关键流程：用较高层级的独立面板前置，避免被 MenuBarExtra 菜单窗口吞掉。
+        // 用较高层级的独立面板前置，避免被 MenuBarExtra 菜单窗口吞掉。
         panel?.orderFrontRegardless()
         panel?.makeKey()
     }
 
     func refresh() {
         guard let appState, let panel else { return }
-        // 关键流程：透明 NSPanel 复用同一个 SwiftUI 图层时，阶段切换可能留下上一帧残影。
+        // 透明 NSPanel 复用同一个 SwiftUI 图层时，阶段切换可能留下上一帧残影。
         // 这里直接重建 HostingView，让 AppKit 清空透明缓冲区后再绘制当前状态。
         panel.contentView = makeHostingView(appState: appState)
         applyPanelCornerMask()
@@ -635,7 +639,7 @@ final class ReminderPanelController {
         let width = panelSize.width
         let height = panelSize.height
         let x = visibleFrame.midX - width / 2
-        // 关键流程：放大后的提示窗仍保持顶部居中，并留出呼吸空间避免贴近菜单栏。
+        // 放大后的提示窗仍保持顶部居中，并留出呼吸空间避免贴近菜单栏。
         let y = visibleFrame.maxY - height - 90
         panel.setFrame(NSRect(x: x, y: y, width: width, height: height), display: true)
     }

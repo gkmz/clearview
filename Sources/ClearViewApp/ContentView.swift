@@ -19,7 +19,7 @@ struct ContentView: View {
         case filter
     }
 
-    // 关键流程：统一四个区域的尺寸比例，避免页面切换时布局抖动。
+    // 统一四个区域的尺寸比例，避免页面切换时布局抖动。
     private enum Layout {
         static let timerCardWidth: CGFloat = 480
         static let timerCardHeight: CGFloat = 236
@@ -30,7 +30,7 @@ struct ContentView: View {
         static let functionHeight: CGFloat = 58
     }
 
-    // 关键流程：背景图片仍按系统深浅色切换，但 UI 基底统一为黑色玻璃风格。
+    // 背景图片仍按系统深浅色切换，但 UI 基底统一为黑色玻璃风格。
     private var isDark: Bool { colorScheme == .dark }
     private var mainOpacity: Double { appState.mainWindowOpacity }
     private var textPrimary: Color { Color.white.opacity(0.96) }
@@ -43,7 +43,7 @@ struct ContentView: View {
         ZStack {
             immersiveBackground
 
-            // 关键流程：沉浸式主界面只保留少量信息，降低工具感，后续可替换为真实背景图。
+            // 沉浸式主界面只保留少量信息，降低工具感，后续可替换为真实背景图。
             VStack(spacing: 16) {
                 clockHeader
                     .padding(.top, 34)
@@ -55,12 +55,12 @@ struct ContentView: View {
                 quoteFooter
                     .padding(.top, 4)
 
-                // 关键流程：底部系统按钮移到主界面右下角后，给提示文案预留更大下边距，视觉上相当于“上移”。
+                // 底部系统按钮移到主界面右下角后，给提示文案预留更大下边距，视觉上相当于“上移”。
                 Spacer(minLength: 72)
             }
             .padding(.horizontal, 40)
 
-            // 关键流程：将设置/测试/隐藏按钮移到主界面右下角，不再占用中间内容卡片高度。
+            // 将设置/测试/隐藏按钮移到主界面右下角，不再占用中间内容卡片高度。
             globalBottomActions
                 .padding(.trailing, 34)
                 .padding(.bottom, 28)
@@ -86,7 +86,7 @@ struct ContentView: View {
                     .frame(width: proxy.size.width, height: proxy.size.height)
                     .clipped()
 
-                // 关键流程：背景图只是氛围层，遮罩负责保证白色文字始终清晰。
+                // 背景图只是氛围层，遮罩负责保证白色文字始终清晰。
                 Color.black.opacity(0.42 * mainOpacity)
 
                 LinearGradient(
@@ -105,9 +105,9 @@ struct ContentView: View {
 
     @ViewBuilder
     private var backgroundImage: some View {
-        // 关键流程：允许用户关闭背景图，直接回退为纯色背景，减少干扰。
+        // 允许用户关闭背景图，直接回退为纯色背景，减少干扰。
         if appState.useBackgroundImage {
-            // 关键流程：SwiftPM 资源中的图片用 Bundle.module 显式读取，避免名称解析失败。
+            // SwiftPM 资源中的图片用 Bundle.module 显式读取，避免名称解析失败。
             if let url = Bundle.module.url(forResource: isDark ? "dark" : "light", withExtension: "jpg"),
                let image = NSImage(contentsOf: url) {
                 Image(nsImage: image)
@@ -151,7 +151,7 @@ struct ContentView: View {
         }
         .padding(Layout.cardPadding)
         .frame(width: Layout.timerCardWidth, height: Layout.timerCardHeight)
-        // 关键流程：去掉功能区独立灰底，让功能区和标题区共享主界面同一层背景。
+        // 去掉功能区独立灰底，让功能区和标题区共享主界面同一层背景。
     }
 
     private var quoteFooter: some View {
@@ -167,7 +167,7 @@ struct ContentView: View {
             tabButton(title: AppCopy.Tab.eyeCare, page: .filter)
         }
         .padding(6)
-        // 关键流程：透明面板内的系统毛玻璃会变白，这里改用低透明手工叠层，保证背景图直接透出。
+        // 透明面板内的系统毛玻璃会变白，这里改用低透明手工叠层，保证背景图直接透出。
         .background {
             ZStack {
                 Capsule(style: .continuous)
@@ -208,7 +208,7 @@ struct ContentView: View {
         EmptyView()
     }
 
-    // 关键流程：中部显示区只承载“大信息”，保证两页尺寸一致。
+    // 中部显示区只承载“大信息”，保证两页尺寸一致。
     private var pageDisplayArea: some View {
         Group {
             if page == .timer {
@@ -227,7 +227,7 @@ struct ContentView: View {
         }
     }
 
-    // 关键流程：功能按钮区承载页面内操作，和系统按钮区分层。
+    // 功能按钮区承载页面内操作，和系统按钮区分层。
     private var pageFunctionArea: some View {
         Group {
             if page == .timer {

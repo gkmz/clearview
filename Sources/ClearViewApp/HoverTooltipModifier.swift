@@ -32,7 +32,7 @@ private struct HoverTooltipModifier: ViewModifier {
             .onHover { hovering in
                 isHovering = hovering
                 if hovering {
-                    // 关键流程：进入悬停后延迟 1 秒显示提示，缩短等待时间。
+                    // 进入悬停后延迟 1 秒显示提示，缩短等待时间。
                     pendingWorkItem?.cancel()
                     let item = DispatchWorkItem {
                         guard isHovering else { return }
@@ -43,7 +43,7 @@ private struct HoverTooltipModifier: ViewModifier {
                     pendingWorkItem = item
                     DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: item)
                 } else {
-                    // 关键流程：离开按钮时立即隐藏提示并取消待执行任务。
+                    // 离开按钮时立即隐藏提示并取消待执行任务。
                     pendingWorkItem?.cancel()
                     pendingWorkItem = nil
                     withAnimation(.easeOut(duration: 0.08)) {

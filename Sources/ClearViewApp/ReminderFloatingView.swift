@@ -42,7 +42,7 @@ struct ReminderFloatingView: View {
                         }
                     }
 
-                    // 关键流程：休息倒计时结束前不允许直接继续，避免用户习惯性忽略提醒。
+                    // 休息倒计时结束前不允许直接继续，避免用户习惯性忽略提醒。
                     floatingIconButton(systemName: "play.fill", isDisabled: appState.reminderPhase != .completed) {
                         appState.completeBreak()
                     }

@@ -26,7 +26,7 @@ final class MainPanelController {
 
         positionAtScreenCenter()
         NSApplication.shared.activate(ignoringOtherApps: true)
-        // 关键流程：打开瞬间临时前置，随后降回普通层级，避免主界面长期挡住其他窗口。
+        // 打开瞬间临时前置，随后降回普通层级，避免主界面长期挡住其他窗口。
         panel?.level = .floating
         panel?.orderFrontRegardless()
         panel?.makeKeyAndOrderFront(nil)
@@ -68,7 +68,7 @@ final class MainPanelController {
             defer: false
         )
 
-        // 关键流程：主界面改由自定义透明面板承载，菜单栏只作为快捷入口。
+        // 主界面改由自定义透明面板承载，菜单栏只作为快捷入口。
         panel.contentView = hostingView
         panel.isOpaque = false
         panel.backgroundColor = .clear

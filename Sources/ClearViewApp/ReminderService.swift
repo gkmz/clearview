@@ -14,7 +14,7 @@ final class ReminderService {
         secondsLeft = workInterval * 60
         onTick?(secondsLeft)
 
-        // 关键流程：每秒刷新倒计时，并在归零后触发休息提醒再重置。
+        // 每秒刷新倒计时，并在归零后触发休息提醒再重置。
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             guard let self else { return }
             self.secondsLeft -= 1
@@ -28,7 +28,7 @@ final class ReminderService {
     }
 
     func reset(intervalMinutes: Int) {
-        // 关键流程：重置只回到初始倒计时，不自动开始；用户需要再次点击开始。
+        // 重置只回到初始倒计时，不自动开始；用户需要再次点击开始。
         stop()
         workInterval = max(1, intervalMinutes)
         secondsLeft = workInterval * 60
@@ -47,7 +47,7 @@ final class ReminderService {
     }
 
     func snooze(minutes: Int) {
-        // 关键流程：推迟提醒时直接重置剩余秒数，保持主计时器持续运行。
+        // 推迟提醒时直接重置剩余秒数，保持主计时器持续运行。
         secondsLeft = max(1, minutes) * 60
         onTick?(secondsLeft)
     }

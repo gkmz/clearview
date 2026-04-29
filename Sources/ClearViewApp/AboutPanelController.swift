@@ -44,7 +44,7 @@ final class AboutPanelController {
             defer: false
         )
 
-        // 关键流程：关于窗和设置窗一样独立承载，避免弹出时影响主界面背景合成。
+        // 关于窗和设置窗一样独立承载，避免弹出时影响主界面背景合成。
         panel.contentView = hostingView
         panel.isOpaque = false
         panel.backgroundColor = .clear
@@ -93,7 +93,7 @@ private struct AboutPanelView: View {
     private var buttonTint: Color { Color.white.opacity(0.20) }
     private var buttonBorder: Color { Color.white.opacity(0.22) }
     private var panelFill: Color {
-        // 关键流程：关于窗复用设置窗透明度，100% 时保持完全不透明。
+        // 关于窗复用设置窗透明度，100% 时保持完全不透明。
         Color.black.opacity(appState.settingsWindowOpacity)
     }
 
@@ -165,7 +165,7 @@ private struct AboutPanelView: View {
             .shadow(color: .black.opacity(0.18), radius: 24, x: 0, y: 14)
         }
         .onAppear {
-            // 关键流程：先揭示标题，再用 45 度高光扫过，最后回到完整纯白文字。
+            // 先揭示标题，再用 45 度高光扫过，最后回到完整纯白文字。
             titleReveal = 0
             shineOffset = -1.2
             isTitleRevealed = false

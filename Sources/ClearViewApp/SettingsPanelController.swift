@@ -51,7 +51,7 @@ final class SettingsPanelController {
             defer: false
         )
 
-        // 关键流程：设置窗独立于主界面渲染，打开/关闭时不再触发主界面背景重新合成。
+        // 设置窗独立于主界面渲染，打开/关闭时不再触发主界面背景重新合成。
         panel.contentView = hostingView
         panel.isOpaque = false
         panel.backgroundColor = .clear
@@ -105,7 +105,7 @@ private struct SettingsPanelView: View {
     private var buttonTint: Color { Color.white.opacity(0.20) }
     private var buttonBorder: Color { Color.white.opacity(0.22) }
     private var panelFill: Color {
-        // 关键流程：设置为 100% 时必须真正不透明，避免滑杆语义和视觉效果不一致。
+        // 设置为 100% 时必须真正不透明，避免滑杆语义和视觉效果不一致。
         Color.black.opacity(appState.settingsWindowOpacity)
     }
 
@@ -118,7 +118,7 @@ private struct SettingsPanelView: View {
                 }
 
             GeometryReader { proxy in
-                // 关键流程：设置窗随内容增减自然伸缩，但整体高度不能超过主界面上下留白后的可用高度。
+                // 设置窗随内容增减自然伸缩，但整体高度不能超过主界面上下留白后的可用高度。
                 let verticalMargin: CGFloat = 48
                 let modalChromeHeight: CGFloat = 80
                 let maxModalHeight = max(proxy.size.height - verticalMargin * 2, 260)
@@ -150,7 +150,7 @@ private struct SettingsPanelView: View {
                         settingsSectionsContent
                     }
                     .frame(maxHeight: maxContentHeight)
-                    // 关键流程：内容未超高时按自然高度收缩；超高时由 maxHeight 截断并启用滚动。
+                    // 内容未超高时按自然高度收缩；超高时由 maxHeight 截断并启用滚动。
                     .fixedSize(horizontal: false, vertical: true)
                     .onPreferenceChange(SettingsPanelContentHeightKey.self) { height in
                         settingsContentHeight = height
@@ -327,7 +327,7 @@ private struct SettingsPanelView: View {
         .padding(10)
         .background(Color.white.opacity(0.06))
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        // 关键流程：折叠状态下整张小标题卡片都可点击，避免只能点文字行。
+        // 折叠状态下整张小标题卡片都可点击，避免只能点文字行。
         .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .onTapGesture {
             if !isExpanded.wrappedValue {
@@ -472,7 +472,7 @@ private struct SettingsPanelView: View {
         shortcutRecordMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             guard let recordingAction = recordingShortcutAction else { return event }
             let flags = event.modifierFlags.intersection([.command, .shift, .option, .control])
-            // 关键流程：普通键需要组合修饰键，功能键允许单独录制，例如 F1/F2。
+            // 普通键需要组合修饰键，功能键允许单独录制，例如 F1/F2。
             guard !flags.isEmpty || GlobalShortcutManager.isFunctionKey(event.keyCode) else {
                 return nil
             }
@@ -578,7 +578,7 @@ private struct SettingsPanelOpacitySlider: View {
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { gesture in
-                        // 关键流程：将拖动位置映射为透明度数值，并按 step 对齐，保证设置保存稳定。
+                        // 将拖动位置映射为透明度数值，并按 step 对齐，保证设置保存稳定。
                         let usableWidth = max(width - thumbSize, 1)
                         let rawProgress = ((gesture.location.x - thumbSize / 2) / usableWidth).clamped(to: 0...1)
                         let rawValue = range.lowerBound + Double(rawProgress) * (range.upperBound - range.lowerBound)

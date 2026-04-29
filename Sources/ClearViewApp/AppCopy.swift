@@ -1,7 +1,7 @@
 import Foundation
 
 enum AppCopy {
-    // 关键流程：集中维护全局文案，避免分散在各个 View/State 中难以统一修改。
+    // 集中维护全局文案，避免分散在各个 View/State 中难以统一修改。
     enum Tab {
         static let eyeRelax = "舒眼"
         static let eyeCare = "护眼"

@@ -153,6 +153,7 @@ final class GlobalShortcutManager {
 
     private let hotKeySignature = OSType(0x43564B59) // "CVKY"
 
+    // 关键流程：Carbon 事件只返回整数 ID，这里建立 ID 与业务动作映射，统一分发到对应回调。
     private let actionByHotKeyID: [UInt32: ShortcutAction] = [
         1: .toggleMainPanel,
         2: .toggleReminder,

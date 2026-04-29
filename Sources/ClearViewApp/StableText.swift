@@ -43,7 +43,7 @@ struct StableText: NSViewRepresentable {
     }
 
     func updateNSView(_ textField: NSTextField, context: Context) {
-        // 关键流程：透明 NSPanel 中避免 SwiftUI Text 的旧帧残影，改由 AppKit 控件稳定重绘文字。
+        // 透明 NSPanel 中避免 SwiftUI Text 的旧帧残影，改由 AppKit 控件稳定重绘文字。
         textField.stringValue = text
         apply(to: textField)
         textField.needsDisplay = true

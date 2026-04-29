@@ -25,6 +25,7 @@ enum ShortcutAction: String, CaseIterable, Codable {
     }
 
     var defaultBinding: ShortcutBinding {
+        // 默认快捷键尽量“可记忆 + 低冲突”；后续若有冲突由用户在设置中覆盖。
         switch self {
         case .toggleMainPanel:
             return ShortcutBinding(keyCode: 49, modifierFlagsRaw: 1_179_648) // Command + Shift + Space
@@ -45,6 +46,7 @@ struct AppSettings: Codable {
     var filterLevelKey: String
     var useBackgroundImage: Bool
     var playBreakFinishedSound: Bool
+    // 兼容历史配置（单一主快捷键字段），迁移期保留，避免老用户升级后丢失快捷键。
     var shortcutKeyCode: UInt16
     var shortcutModifierFlagsRaw: UInt
     var shortcutToggleMainPanelKeyCode: UInt16
@@ -160,6 +162,7 @@ struct AppSettings: Codable {
         useBackgroundImage = try container.decodeIfPresent(Bool.self, forKey: .useBackgroundImage) ?? defaults.useBackgroundImage
         playBreakFinishedSound = try container.decodeIfPresent(Bool.self, forKey: .playBreakFinishedSound) ?? defaults.playBreakFinishedSound
 
+        // 关键流程：先读取旧字段，再作为新字段的回退值，保证历史版本平滑升级到多快捷键结构。
         let legacyKeyCode = try container.decodeIfPresent(UInt16.self, forKey: .shortcutKeyCode) ?? defaults.shortcutKeyCode
         let legacyModifierFlagsRaw = try container.decodeIfPresent(UInt.self, forKey: .shortcutModifierFlagsRaw) ?? defaults.shortcutModifierFlagsRaw
         shortcutKeyCode = legacyKeyCode
@@ -197,7 +200,7 @@ final class AppSettingsStore {
         do {
             return try JSONDecoder().decode(AppSettings.self, from: data)
         } catch {
-            // 关键流程：配置损坏时回退默认值，避免影响应用启动。
+            // 配置损坏时回退默认值，避免影响应用启动。
             return .default
         }
     }
@@ -207,7 +210,7 @@ final class AppSettingsStore {
             let data = try JSONEncoder().encode(settings)
             defaults.set(data, forKey: key)
         } catch {
-            // 关键流程：写入失败时不打断主流程，保持当前内存状态可继续使用。
+            // 写入失败时不打断主流程，保持当前内存状态可继续使用。
         }
     }
 }

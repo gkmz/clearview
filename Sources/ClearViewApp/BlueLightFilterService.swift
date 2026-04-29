@@ -30,7 +30,7 @@ final class BlueLightFilterService {
     func apply(level: BlueLightLevel) {
         switch level {
         case .off:
-            // 关键流程：关闭过滤时恢复系统默认色彩设置。
+            // 关闭过滤时恢复系统默认色彩设置。
             CGDisplayRestoreColorSyncSettings()
         case .light:
             applyToAllDisplays(red: 1.0, green: 0.95, blue: 0.88)
@@ -48,7 +48,7 @@ final class BlueLightFilterService {
         CGGetOnlineDisplayList(count, &displays, &count)
 
         for display in displays {
-            // 关键流程：通过 gamma 公式修改通道比例，实现蓝光过滤效果。
+            // 通过 gamma 公式修改通道比例，实现蓝光过滤效果。
             CGSetDisplayTransferByFormula(
                 display,
                 0, red, 1,
