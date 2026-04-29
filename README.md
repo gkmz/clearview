@@ -4,7 +4,7 @@ English | [简体中文](README.zh-CN.md)
 
 [![Platform](https://img.shields.io/badge/platform-macOS%2013%2B-blue)](#system-requirements)
 [![Swift](https://img.shields.io/badge/Swift-5.9-orange)](#development)
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 
 ClearView is a lightweight macOS eye-care timer that helps users maintain healthy break rhythms during long screen-time sessions.
 

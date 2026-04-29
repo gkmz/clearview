@@ -4,7 +4,7 @@
 
 [![Platform](https://img.shields.io/badge/platform-macOS%2013%2B-blue)](#系统要求)
 [![Swift](https://img.shields.io/badge/Swift-5.9-orange)](#开发)
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 
 ClearView 是一款轻量的 macOS 护眼提醒工具，帮助用户在长时间屏幕工作中保持更健康的休息节奏。
 

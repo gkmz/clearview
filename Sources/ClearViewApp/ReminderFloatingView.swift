@@ -10,13 +10,13 @@ struct ReminderFloatingView: View {
     private var opacityFactor: Double { appState.reminderWindowOpacity }
     private var panelFill: Color {
         let opacity = isDark
-            ? 0.30 + 0.70 * opacityFactor
-            : 0.26 + 0.74 * opacityFactor
+            ? 0.24 + 0.62 * opacityFactor
+            : 0.20 + 0.66 * opacityFactor
         return Color.black.opacity(opacity)
     }
-    private var panelBorder: Color { Color.white.opacity((isDark ? 0.16 : 0.18) * opacityFactor) }
-    private var buttonFill: Color { Color.white.opacity((isDark ? 0.12 : 0.14) * opacityFactor) }
-    private var buttonBorder: Color { Color.white.opacity((isDark ? 0.18 : 0.20) * opacityFactor) }
+    private var panelBorder: Color { Color.white.opacity((isDark ? 0.20 : 0.24) * opacityFactor) }
+    private var buttonFill: Color { Color.white.opacity((isDark ? 0.10 : 0.12) * opacityFactor) }
+    private var buttonBorder: Color { Color.white.opacity((isDark ? 0.24 : 0.26) * opacityFactor) }
 
     var body: some View {
         ZStack {
@@ -33,6 +33,7 @@ struct ReminderFloatingView: View {
                     usesMonospacedDigit: true
                 )
                 .frame(height: 90)
+                .padding(.top, -2)
 
                 HStack(spacing: 22) {
                     if appState.reminderPhase != .completed {
@@ -46,12 +47,14 @@ struct ReminderFloatingView: View {
                         appState.completeBreak()
                     }
                 }
+                .padding(.top, 4)
 
-                StableText(messageText, size: 17, weight: .medium, alpha: 0.72)
+                StableText(messageText, size: 17, weight: .medium, alpha: 0.78)
                     .frame(height: 22)
+                    .padding(.top, 2)
             }
             .padding(.horizontal, 40)
-            .padding(.vertical, 28)
+            .padding(.vertical, 30)
             .id(appState.reminderPhase)
             .transaction { transaction in
                 transaction.animation = nil
@@ -73,9 +76,9 @@ struct ReminderFloatingView: View {
                 .fill(
                     LinearGradient(
                         colors: [
-                            Color.white.opacity(isDark ? 0.05 : 0.16),
-                            Color.clear,
-                            Color.black.opacity(isDark ? 0.10 : 0.04)
+                            Color.white.opacity(isDark ? 0.08 : 0.18),
+                            Color.white.opacity(isDark ? 0.02 : 0.04),
+                            Color.black.opacity(isDark ? 0.12 : 0.06)
                         ],
                         startPoint: .top,
                         endPoint: .bottom
@@ -122,23 +125,40 @@ struct ReminderFloatingView: View {
         isDisabled: Bool = false,
         action: @escaping () -> Void
     ) -> some View {
-        Button(action: action) {
+        let isPrimaryAction = systemName == "play.fill"
+        return Button(action: action) {
             Image(systemName: systemName)
                 .font(.system(size: 24, weight: .semibold))
                 .frame(width: 58, height: 58)
-                .foregroundStyle(textPrimary.opacity(isDisabled ? 0.35 : 0.92))
+                .foregroundStyle(
+                    textPrimary.opacity(
+                        isDisabled
+                            ? 0.35
+                            : (isPrimaryAction ? 0.98 : 0.90)
+                    )
+                )
                 .background(isDark ? AnyShapeStyle(.ultraThinMaterial) : AnyShapeStyle(Color.clear))
-                .background(isDisabled ? buttonFill.opacity(0.42) : buttonFill)
+                .background(
+                    isDisabled
+                        ? buttonFill.opacity(0.42)
+                        : (isPrimaryAction ? buttonFill.opacity(1.35) : buttonFill)
+                )
                 .clipShape(Circle())
         }
         .buttonStyle(.plain)
         .disabled(isDisabled)
         .focusable(false)
+        .scaleEffect(isDisabled ? 1.0 : (isPrimaryAction ? 1.03 : 1.0))
         .overlay(
             Circle()
-                .stroke(isDisabled ? buttonBorder.opacity(0.38) : buttonBorder, lineWidth: 1)
+                .stroke(
+                    isDisabled
+                        ? buttonBorder.opacity(0.38)
+                        : (isPrimaryAction ? buttonBorder.opacity(1.20) : buttonBorder),
+                    lineWidth: isPrimaryAction ? 1.2 : 1
+                )
         )
-        .shadow(color: .black.opacity(isDisabled ? 0.02 : 0.08), radius: 6, x: 0, y: 3)
+        .shadow(color: .black.opacity(isDisabled ? 0.02 : (isPrimaryAction ? 0.13 : 0.08)), radius: isPrimaryAction ? 9 : 6, x: 0, y: isPrimaryAction ? 4 : 3)
         .hoverTooltip(helpText(for: systemName))
     }
 
