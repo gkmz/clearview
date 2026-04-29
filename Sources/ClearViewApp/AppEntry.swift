@@ -362,8 +362,8 @@ final class AppState: ObservableObject {
                     self.breakCountdownTimer = nil
                     self.startBreakCountdown()
                 } else {
-                    // 关键流程：倒计时过程中仅触发重绘，不重建 SwiftUI 视图，兼顾去重影与悬停提示稳定性。
-                    self.reminderPanel?.refreshDisplayOnly()
+                    // 关键流程：透明提示窗中的大号倒计时每秒变化时，重建内容视图以彻底清空上一帧数字残影。
+                    self.reminderPanel?.refresh()
                 }
             }
         }
@@ -392,8 +392,8 @@ final class AppState: ObservableObject {
                     self.breakCountdownTimer?.invalidate()
                     self.breakCountdownTimer = nil
                 } else {
-                    // 关键流程：每秒数字变化后请求窗口重绘，清理透明面板上的旧帧残留。
-                    self.reminderPanel?.refreshDisplayOnly()
+                    // 关键流程：透明提示窗中的大号倒计时每秒变化时，重建内容视图以彻底清空上一帧数字残影。
+                    self.reminderPanel?.refresh()
                 }
             }
         }
