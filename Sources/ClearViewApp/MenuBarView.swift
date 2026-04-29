@@ -17,10 +17,6 @@ struct MenuBarView: View {
             appState.toggleReminder(!appState.reminderEnabled)
         }
 
-        Button("试试提醒") {
-            appState.triggerTestReminderNow()
-        }
-
         Divider()
 
         Button("退出 ClearView") {

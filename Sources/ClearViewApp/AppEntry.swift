@@ -34,6 +34,10 @@ final class AppState: ObservableObject {
     @Published var playBreakFinishedSound = false
     @Published var shortcutKeyCode: UInt16 = 49
     @Published var shortcutModifierFlagsRaw: UInt = 1_179_648
+    @Published var reminderToggleShortcutKeyCode: UInt16 = 35
+    @Published var reminderToggleShortcutModifierFlagsRaw: UInt = 1_179_648
+    @Published var cycleFilterShortcutKeyCode: UInt16 = 37
+    @Published var cycleFilterShortcutModifierFlagsRaw: UInt = 1_179_648
     @Published var backgroundImageOpacity: Double = 1.0
     @Published var mainWindowOpacity: Double = 0.80
     @Published var reminderWindowOpacity: Double = 0.78
@@ -72,7 +76,8 @@ final class AppState: ObservableObject {
         } else {
             reminderService.stop()
         }
-        let shortcutRegistered = shortcutManager.configure(
+        let mainPanelShortcutRegistered = shortcutManager.configure(
+            action: .toggleMainPanel,
             keyCode: shortcutKeyCode,
             modifierFlagsRaw: shortcutModifierFlagsRaw
         ) { [weak self] in
@@ -80,8 +85,31 @@ final class AppState: ObservableObject {
                 self?.toggleMainPanel()
             }
         }
-        if !shortcutRegistered {
-            statusText = "默认快捷键注册失败，请在设置中重新选择"
+        let reminderToggleShortcutRegistered = shortcutManager.configure(
+            action: .toggleReminder,
+            keyCode: reminderToggleShortcutKeyCode,
+            modifierFlagsRaw: reminderToggleShortcutModifierFlagsRaw
+        ) { [weak self] in
+            Task { @MainActor in
+                guard let self else { return }
+                self.toggleReminder(!self.reminderEnabled)
+            }
+        }
+        let cycleFilterShortcutRegistered = shortcutManager.configure(
+            action: .cycleBlueLightLevel,
+            keyCode: cycleFilterShortcutKeyCode,
+            modifierFlagsRaw: cycleFilterShortcutModifierFlagsRaw
+        ) { [weak self] in
+            Task { @MainActor in
+                self?.cycleBlueLightLevel()
+            }
+        }
+        if !mainPanelShortcutRegistered {
+            statusText = "主界面快捷键注册失败，请在设置中重新选择"
+        } else if !reminderToggleShortcutRegistered {
+            statusText = "暂停提醒快捷键注册失败，请在设置中重新选择"
+        } else if !cycleFilterShortcutRegistered {
+            statusText = "护眼模式快捷键注册失败，请在设置中重新选择"
         }
         mainPanel = MainPanelController(appState: self)
         reminderPanel = ReminderPanelController(appState: self)
@@ -162,32 +190,81 @@ final class AppState: ObservableObject {
         persistSettings()
     }
 
-    func updateShortcut(keyCode: UInt16, modifierFlagsRaw: UInt) {
+    func updateShortcut(action: ShortcutAction, keyCode: UInt16, modifierFlagsRaw: UInt) {
         // 关键流程：普通按键至少需要一个修饰键；F1-F20 这类功能键允许单独作为全局快捷键。
         let flags = NSEvent.ModifierFlags(rawValue: modifierFlagsRaw)
             .intersection([.command, .shift, .option, .control])
-        guard !flags.isEmpty || GlobalShortcutManager.isFunctionKey(keyCode) else { return }
-        let previousKeyCode = shortcutKeyCode
-        let previousFlagsRaw = shortcutModifierFlagsRaw
-        shortcutKeyCode = keyCode
-        shortcutModifierFlagsRaw = flags.rawValue
-        let success = shortcutManager.updateShortcut(keyCode: keyCode, modifierFlagsRaw: flags.rawValue)
+        guard !flags.isEmpty || GlobalShortcutManager.isFunctionKey(keyCode) else {
+            statusText = "普通按键需配合修饰键"
+            return
+        }
+
+        let normalizedBinding = ShortcutBinding(keyCode: keyCode, modifierFlagsRaw: flags.rawValue)
+        let oldBinding = binding(for: action)
+
+        if hasInternalConflict(for: action, binding: normalizedBinding) {
+            statusText = "该快捷键已被应用内其他功能使用"
+            return
+        }
+
+        setBinding(normalizedBinding, for: action)
+        let success = shortcutManager.updateShortcut(action: action, keyCode: keyCode, modifierFlagsRaw: flags.rawValue)
         if success {
             statusText = "快捷键已更新"
         } else {
-            shortcutKeyCode = previousKeyCode
-            shortcutModifierFlagsRaw = previousFlagsRaw
-            _ = shortcutManager.updateShortcut(keyCode: previousKeyCode, modifierFlagsRaw: previousFlagsRaw)
+            setBinding(oldBinding, for: action)
+            _ = shortcutManager.updateShortcut(
+                action: action,
+                keyCode: oldBinding.keyCode,
+                modifierFlagsRaw: oldBinding.modifierFlagsRaw
+            )
             statusText = "快捷键被系统占用，请换一组组合键"
         }
         persistSettings()
     }
 
-    var shortcutDisplayString: String {
-        shortcutManager.shortcutDisplayString(
-            keyCode: shortcutKeyCode,
-            modifierFlagsRaw: shortcutModifierFlagsRaw
+    func shortcutDisplayString(for action: ShortcutAction) -> String {
+        let binding = binding(for: action)
+        return shortcutManager.shortcutDisplayString(
+            keyCode: binding.keyCode,
+            modifierFlagsRaw: binding.modifierFlagsRaw
         )
+    }
+
+    private func binding(for action: ShortcutAction) -> ShortcutBinding {
+        switch action {
+        case .toggleMainPanel:
+            return ShortcutBinding(keyCode: shortcutKeyCode, modifierFlagsRaw: shortcutModifierFlagsRaw)
+        case .toggleReminder:
+            return ShortcutBinding(keyCode: reminderToggleShortcutKeyCode, modifierFlagsRaw: reminderToggleShortcutModifierFlagsRaw)
+        case .cycleBlueLightLevel:
+            return ShortcutBinding(keyCode: cycleFilterShortcutKeyCode, modifierFlagsRaw: cycleFilterShortcutModifierFlagsRaw)
+        }
+    }
+
+    private func setBinding(_ binding: ShortcutBinding, for action: ShortcutAction) {
+        switch action {
+        case .toggleMainPanel:
+            shortcutKeyCode = binding.keyCode
+            shortcutModifierFlagsRaw = binding.modifierFlagsRaw
+        case .toggleReminder:
+            reminderToggleShortcutKeyCode = binding.keyCode
+            reminderToggleShortcutModifierFlagsRaw = binding.modifierFlagsRaw
+        case .cycleBlueLightLevel:
+            cycleFilterShortcutKeyCode = binding.keyCode
+            cycleFilterShortcutModifierFlagsRaw = binding.modifierFlagsRaw
+        }
+    }
+
+    private func hasInternalConflict(for action: ShortcutAction, binding candidateBinding: ShortcutBinding) -> Bool {
+        ShortcutAction.allCases.contains { candidate in
+            guard candidate != action else { return false }
+            return binding(for: candidate) == candidateBinding
+        }
+    }
+
+    var shortcutDisplayString: String {
+        shortcutDisplayString(for: .toggleMainPanel)
     }
 
     func updateMainWindowOpacity(_ value: Double) {
@@ -208,6 +285,16 @@ final class AppState: ObservableObject {
         reminderWindowOpacity = min(max(value, 0.25), 1.0)
         statusText = "提示窗透明度已调整"
         persistSettings()
+    }
+
+    func cycleBlueLightLevel() {
+        let levels = BlueLightLevel.allCases
+        guard let currentIndex = levels.firstIndex(of: filterLevel) else {
+            applyFilter(levels.first ?? .off)
+            return
+        }
+        let nextIndex = (currentIndex + 1) % levels.count
+        applyFilter(levels[nextIndex])
     }
 
     func triggerTestReminderNow() {
@@ -335,8 +422,12 @@ final class AppState: ObservableObject {
         filterLevel = BlueLightLevel.fromSettingsKey(settings.filterLevelKey)
         useBackgroundImage = settings.useBackgroundImage
         playBreakFinishedSound = settings.playBreakFinishedSound
-        shortcutKeyCode = settings.shortcutKeyCode
-        shortcutModifierFlagsRaw = settings.shortcutModifierFlagsRaw
+        shortcutKeyCode = settings.shortcutToggleMainPanelKeyCode
+        shortcutModifierFlagsRaw = settings.shortcutToggleMainPanelModifierFlagsRaw
+        reminderToggleShortcutKeyCode = settings.shortcutToggleReminderKeyCode
+        reminderToggleShortcutModifierFlagsRaw = settings.shortcutToggleReminderModifierFlagsRaw
+        cycleFilterShortcutKeyCode = settings.shortcutCycleBlueLightLevelKeyCode
+        cycleFilterShortcutModifierFlagsRaw = settings.shortcutCycleBlueLightLevelModifierFlagsRaw
         backgroundImageOpacity = min(max(settings.backgroundImageOpacity, 0.25), 1.0)
         mainWindowOpacity = normalizedMainWindowOpacity(settings.mainWindowOpacity, useBackgroundImage: useBackgroundImage)
         reminderWindowOpacity = min(max(settings.reminderWindowOpacity, 0.25), 1.0)
@@ -364,6 +455,12 @@ final class AppState: ObservableObject {
             playBreakFinishedSound: playBreakFinishedSound,
             shortcutKeyCode: shortcutKeyCode,
             shortcutModifierFlagsRaw: shortcutModifierFlagsRaw,
+            shortcutToggleMainPanelKeyCode: shortcutKeyCode,
+            shortcutToggleMainPanelModifierFlagsRaw: shortcutModifierFlagsRaw,
+            shortcutToggleReminderKeyCode: reminderToggleShortcutKeyCode,
+            shortcutToggleReminderModifierFlagsRaw: reminderToggleShortcutModifierFlagsRaw,
+            shortcutCycleBlueLightLevelKeyCode: cycleFilterShortcutKeyCode,
+            shortcutCycleBlueLightLevelModifierFlagsRaw: cycleFilterShortcutModifierFlagsRaw,
             backgroundImageOpacity: backgroundImageOpacity,
             mainWindowOpacity: mainWindowOpacity,
             reminderWindowOpacity: reminderWindowOpacity

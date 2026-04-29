@@ -4,19 +4,16 @@ import Carbon.HIToolbox
 final class GlobalShortcutManager {
     static let shared = GlobalShortcutManager()
 
-    private var keyCode: UInt16 = 49
-    private var modifierFlags: NSEvent.ModifierFlags = [.command, .shift]
-    private var onTrigger: (() -> Void)?
     private var eventHandlerRef: EventHandlerRef?
-    private var hotKeyRef: EventHotKeyRef?
-    private let hotKeyID = EventHotKeyID(signature: OSType(0x43564B59), id: 1) // "CVKY"
+    private var registeredRefs: [ShortcutAction: EventHotKeyRef] = [:]
+    private var callbacks: [ShortcutAction: () -> Void] = [:]
 
     private init() {
         installHotKeyHandler()
     }
 
     deinit {
-        unregisterHotKey()
+        unregisterAllHotKeys()
         if let eventHandlerRef {
             RemoveEventHandler(eventHandlerRef)
         }
@@ -24,21 +21,18 @@ final class GlobalShortcutManager {
 
     @discardableResult
     func configure(
+        action: ShortcutAction,
         keyCode: UInt16,
         modifierFlagsRaw: UInt,
         onTrigger: @escaping () -> Void
     ) -> Bool {
-        self.keyCode = keyCode
-        self.modifierFlags = normalized(NSEvent.ModifierFlags(rawValue: modifierFlagsRaw))
-        self.onTrigger = onTrigger
-        return registerHotKey()
+        callbacks[action] = onTrigger
+        return registerHotKey(action: action, keyCode: keyCode, modifierFlagsRaw: modifierFlagsRaw)
     }
 
     @discardableResult
-    func updateShortcut(keyCode: UInt16, modifierFlagsRaw: UInt) -> Bool {
-        self.keyCode = keyCode
-        self.modifierFlags = normalized(NSEvent.ModifierFlags(rawValue: modifierFlagsRaw))
-        return registerHotKey()
+    func updateShortcut(action: ShortcutAction, keyCode: UInt16, modifierFlagsRaw: UInt) -> Bool {
+        registerHotKey(action: action, keyCode: keyCode, modifierFlagsRaw: modifierFlagsRaw)
     }
 
     func shortcutDisplayString(keyCode: UInt16, modifierFlagsRaw: UInt) -> String {
@@ -93,29 +87,42 @@ final class GlobalShortcutManager {
             &triggeredID
         )
         guard status == noErr else { return }
-        guard triggeredID.signature == hotKeyID.signature, triggeredID.id == hotKeyID.id else { return }
-        onTrigger?()
+        guard triggeredID.signature == hotKeySignature else { return }
+        guard let action = actionByHotKeyID[triggeredID.id] else { return }
+        callbacks[action]?()
     }
 
-    private func registerHotKey() -> Bool {
-        unregisterHotKey()
+    private func registerHotKey(action: ShortcutAction, keyCode: UInt16, modifierFlagsRaw: UInt) -> Bool {
+        unregisterHotKey(action: action)
         var registeredRef: EventHotKeyRef?
+        let flags = normalized(NSEvent.ModifierFlags(rawValue: modifierFlagsRaw))
+        let hotKeyID = EventHotKeyID(signature: hotKeySignature, id: action.hotKeyID)
         let status = RegisterEventHotKey(
             UInt32(keyCode),
-            carbonModifiers(from: modifierFlags),
+            carbonModifiers(from: flags),
             hotKeyID,
             GetEventDispatcherTarget(),
             0,
             &registeredRef
         )
-        hotKeyRef = registeredRef
-        return status == noErr && registeredRef != nil
+        if status == noErr, let registeredRef {
+            registeredRefs[action] = registeredRef
+            return true
+        }
+        return false
     }
 
-    private func unregisterHotKey() {
-        if let hotKeyRef {
-            UnregisterEventHotKey(hotKeyRef)
-            self.hotKeyRef = nil
+    private func unregisterHotKey(action: ShortcutAction) {
+        if let ref = registeredRefs[action] {
+            UnregisterEventHotKey(ref)
+            registeredRefs[action] = nil
+        }
+    }
+
+    private func unregisterAllHotKeys() {
+        for (action, ref) in registeredRefs {
+            UnregisterEventHotKey(ref)
+            registeredRefs[action] = nil
         }
     }
 
@@ -144,6 +151,14 @@ final class GlobalShortcutManager {
         return Self.functionKeyNames[keyCode] ?? keyMap[keyCode] ?? "#\(keyCode)"
     }
 
+    private let hotKeySignature = OSType(0x43564B59) // "CVKY"
+
+    private let actionByHotKeyID: [UInt32: ShortcutAction] = [
+        1: .toggleMainPanel,
+        2: .toggleReminder,
+        3: .cycleBlueLightLevel
+    ]
+
     private static let functionKeyNames: [UInt16: String] = [
         122: "F1",
         120: "F2",
@@ -166,4 +181,14 @@ final class GlobalShortcutManager {
         80: "F19",
         90: "F20"
     ]
+}
+
+private extension ShortcutAction {
+    var hotKeyID: UInt32 {
+        switch self {
+        case .toggleMainPanel: return 1
+        case .toggleReminder: return 2
+        case .cycleBlueLightLevel: return 3
+        }
+    }
 }

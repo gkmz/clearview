@@ -7,7 +7,7 @@ struct ContentView: View {
     @State private var page: Page = .timer
     @State private var showSettings = false
     @State private var now = Date()
-    @State private var isRecordingShortcut = false
+    @State private var recordingShortcutAction: ShortcutAction?
     @State private var shortcutRecordMonitor: Any?
     @State private var isRhythmSettingsExpanded = true
     @State private var isAppearanceSettingsExpanded = false
@@ -590,21 +590,32 @@ struct ContentView: View {
     }
 
     private var shortcutSettingCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(ShortcutAction.allCases, id: \.self) { action in
+                shortcutRow(for: action)
+            }
+        }
+        .padding(10)
+        .background(Color.white.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    private func shortcutRow(for action: ShortcutAction) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("打开主界面快捷键")
+                Text(action.title)
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(textPrimary)
                 Spacer()
-                StableText(appState.shortcutDisplayString, size: 12, weight: .semibold, alpha: 0.94)
-                    .frame(width: 84, height: 18)
+                StableText(appState.shortcutDisplayString(for: action), size: 12, weight: .semibold, alpha: 0.94)
+                    .frame(width: 92, height: 18)
             }
 
             Button {
-                startShortcutRecording()
+                startShortcutRecording(for: action)
             } label: {
                 StableText(
-                    isRecordingShortcut ? "请按下新快捷键..." : "录制快捷键",
+                    recordingShortcutAction == action ? "请按下新快捷键..." : "录制快捷键",
                     size: 12,
                     weight: .semibold,
                     alpha: 0.94
@@ -617,28 +628,28 @@ struct ContentView: View {
             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
         .padding(10)
-        .background(Color.white.opacity(0.08))
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(Color.white.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
-    private func startShortcutRecording() {
+    private func startShortcutRecording(for action: ShortcutAction) {
         stopShortcutRecording()
-        isRecordingShortcut = true
+        recordingShortcutAction = action
         shortcutRecordMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-            guard isRecordingShortcut else { return event }
+            guard let recordingAction = recordingShortcutAction else { return event }
             let flags = event.modifierFlags.intersection([.command, .shift, .option, .control])
             // 关键流程：普通键需要组合修饰键，功能键允许单独录制，例如 F1/F2。
             guard !flags.isEmpty || GlobalShortcutManager.isFunctionKey(event.keyCode) else {
                 return nil
             }
-            appState.updateShortcut(keyCode: event.keyCode, modifierFlagsRaw: flags.rawValue)
+            appState.updateShortcut(action: recordingAction, keyCode: event.keyCode, modifierFlagsRaw: flags.rawValue)
             stopShortcutRecording()
             return nil
         }
     }
 
     private func stopShortcutRecording() {
-        isRecordingShortcut = false
+        recordingShortcutAction = nil
         if let shortcutRecordMonitor {
             NSEvent.removeMonitor(shortcutRecordMonitor)
             self.shortcutRecordMonitor = nil

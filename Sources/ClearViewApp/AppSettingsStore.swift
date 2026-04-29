@@ -1,5 +1,38 @@
 import Foundation
 
+struct ShortcutBinding: Codable, Equatable {
+    var keyCode: UInt16
+    var modifierFlagsRaw: UInt
+}
+
+enum ShortcutAction: String, CaseIterable, Codable {
+    case toggleMainPanel
+    case toggleReminder
+    case cycleBlueLightLevel
+
+    var title: String {
+        switch self {
+        case .toggleMainPanel:
+            return "打开主界面"
+        case .toggleReminder:
+            return "暂停/继续提醒"
+        case .cycleBlueLightLevel:
+            return "切换护眼模式"
+        }
+    }
+
+    var defaultBinding: ShortcutBinding {
+        switch self {
+        case .toggleMainPanel:
+            return ShortcutBinding(keyCode: 49, modifierFlagsRaw: 1_179_648) // Command + Shift + Space
+        case .toggleReminder:
+            return ShortcutBinding(keyCode: 35, modifierFlagsRaw: 1_179_648) // Command + Shift + P
+        case .cycleBlueLightLevel:
+            return ShortcutBinding(keyCode: 37, modifierFlagsRaw: 1_179_648) // Command + Shift + L
+        }
+    }
+}
+
 struct AppSettings: Codable {
     var reminderEnabled: Bool
     var workIntervalMinutes: Int
@@ -9,6 +42,12 @@ struct AppSettings: Codable {
     var playBreakFinishedSound: Bool
     var shortcutKeyCode: UInt16
     var shortcutModifierFlagsRaw: UInt
+    var shortcutToggleMainPanelKeyCode: UInt16
+    var shortcutToggleMainPanelModifierFlagsRaw: UInt
+    var shortcutToggleReminderKeyCode: UInt16
+    var shortcutToggleReminderModifierFlagsRaw: UInt
+    var shortcutCycleBlueLightLevelKeyCode: UInt16
+    var shortcutCycleBlueLightLevelModifierFlagsRaw: UInt
     var backgroundImageOpacity: Double
     var mainWindowOpacity: Double
     var reminderWindowOpacity: Double
@@ -20,9 +59,14 @@ struct AppSettings: Codable {
         filterLevelKey: "off",
         useBackgroundImage: false,
         playBreakFinishedSound: false,
-        // 关键流程：默认快捷键使用 Command + Shift + Space，便于单手快速唤起主界面。
-        shortcutKeyCode: 49,
-        shortcutModifierFlagsRaw: 1_179_648,
+        shortcutKeyCode: ShortcutAction.toggleMainPanel.defaultBinding.keyCode,
+        shortcutModifierFlagsRaw: ShortcutAction.toggleMainPanel.defaultBinding.modifierFlagsRaw,
+        shortcutToggleMainPanelKeyCode: ShortcutAction.toggleMainPanel.defaultBinding.keyCode,
+        shortcutToggleMainPanelModifierFlagsRaw: ShortcutAction.toggleMainPanel.defaultBinding.modifierFlagsRaw,
+        shortcutToggleReminderKeyCode: ShortcutAction.toggleReminder.defaultBinding.keyCode,
+        shortcutToggleReminderModifierFlagsRaw: ShortcutAction.toggleReminder.defaultBinding.modifierFlagsRaw,
+        shortcutCycleBlueLightLevelKeyCode: ShortcutAction.cycleBlueLightLevel.defaultBinding.keyCode,
+        shortcutCycleBlueLightLevelModifierFlagsRaw: ShortcutAction.cycleBlueLightLevel.defaultBinding.modifierFlagsRaw,
         backgroundImageOpacity: 1.0,
         mainWindowOpacity: 0.80,
         reminderWindowOpacity: 0.78
@@ -37,6 +81,12 @@ struct AppSettings: Codable {
         case playBreakFinishedSound
         case shortcutKeyCode
         case shortcutModifierFlagsRaw
+        case shortcutToggleMainPanelKeyCode
+        case shortcutToggleMainPanelModifierFlagsRaw
+        case shortcutToggleReminderKeyCode
+        case shortcutToggleReminderModifierFlagsRaw
+        case shortcutCycleBlueLightLevelKeyCode
+        case shortcutCycleBlueLightLevelModifierFlagsRaw
         case backgroundImageOpacity
         case mainWindowOpacity
         case reminderWindowOpacity
@@ -51,6 +101,12 @@ struct AppSettings: Codable {
         playBreakFinishedSound: Bool,
         shortcutKeyCode: UInt16,
         shortcutModifierFlagsRaw: UInt,
+        shortcutToggleMainPanelKeyCode: UInt16,
+        shortcutToggleMainPanelModifierFlagsRaw: UInt,
+        shortcutToggleReminderKeyCode: UInt16,
+        shortcutToggleReminderModifierFlagsRaw: UInt,
+        shortcutCycleBlueLightLevelKeyCode: UInt16,
+        shortcutCycleBlueLightLevelModifierFlagsRaw: UInt,
         backgroundImageOpacity: Double,
         mainWindowOpacity: Double,
         reminderWindowOpacity: Double
@@ -63,6 +119,12 @@ struct AppSettings: Codable {
         self.playBreakFinishedSound = playBreakFinishedSound
         self.shortcutKeyCode = shortcutKeyCode
         self.shortcutModifierFlagsRaw = shortcutModifierFlagsRaw
+        self.shortcutToggleMainPanelKeyCode = shortcutToggleMainPanelKeyCode
+        self.shortcutToggleMainPanelModifierFlagsRaw = shortcutToggleMainPanelModifierFlagsRaw
+        self.shortcutToggleReminderKeyCode = shortcutToggleReminderKeyCode
+        self.shortcutToggleReminderModifierFlagsRaw = shortcutToggleReminderModifierFlagsRaw
+        self.shortcutCycleBlueLightLevelKeyCode = shortcutCycleBlueLightLevelKeyCode
+        self.shortcutCycleBlueLightLevelModifierFlagsRaw = shortcutCycleBlueLightLevelModifierFlagsRaw
         self.backgroundImageOpacity = backgroundImageOpacity
         self.mainWindowOpacity = mainWindowOpacity
         self.reminderWindowOpacity = reminderWindowOpacity
@@ -77,8 +139,19 @@ struct AppSettings: Codable {
         filterLevelKey = try container.decodeIfPresent(String.self, forKey: .filterLevelKey) ?? defaults.filterLevelKey
         useBackgroundImage = try container.decodeIfPresent(Bool.self, forKey: .useBackgroundImage) ?? defaults.useBackgroundImage
         playBreakFinishedSound = try container.decodeIfPresent(Bool.self, forKey: .playBreakFinishedSound) ?? defaults.playBreakFinishedSound
-        shortcutKeyCode = try container.decodeIfPresent(UInt16.self, forKey: .shortcutKeyCode) ?? defaults.shortcutKeyCode
-        shortcutModifierFlagsRaw = try container.decodeIfPresent(UInt.self, forKey: .shortcutModifierFlagsRaw) ?? defaults.shortcutModifierFlagsRaw
+
+        let legacyKeyCode = try container.decodeIfPresent(UInt16.self, forKey: .shortcutKeyCode) ?? defaults.shortcutKeyCode
+        let legacyModifierFlagsRaw = try container.decodeIfPresent(UInt.self, forKey: .shortcutModifierFlagsRaw) ?? defaults.shortcutModifierFlagsRaw
+        shortcutKeyCode = legacyKeyCode
+        shortcutModifierFlagsRaw = legacyModifierFlagsRaw
+
+        shortcutToggleMainPanelKeyCode = try container.decodeIfPresent(UInt16.self, forKey: .shortcutToggleMainPanelKeyCode) ?? legacyKeyCode
+        shortcutToggleMainPanelModifierFlagsRaw = try container.decodeIfPresent(UInt.self, forKey: .shortcutToggleMainPanelModifierFlagsRaw) ?? legacyModifierFlagsRaw
+        shortcutToggleReminderKeyCode = try container.decodeIfPresent(UInt16.self, forKey: .shortcutToggleReminderKeyCode) ?? defaults.shortcutToggleReminderKeyCode
+        shortcutToggleReminderModifierFlagsRaw = try container.decodeIfPresent(UInt.self, forKey: .shortcutToggleReminderModifierFlagsRaw) ?? defaults.shortcutToggleReminderModifierFlagsRaw
+        shortcutCycleBlueLightLevelKeyCode = try container.decodeIfPresent(UInt16.self, forKey: .shortcutCycleBlueLightLevelKeyCode) ?? defaults.shortcutCycleBlueLightLevelKeyCode
+        shortcutCycleBlueLightLevelModifierFlagsRaw = try container.decodeIfPresent(UInt.self, forKey: .shortcutCycleBlueLightLevelModifierFlagsRaw) ?? defaults.shortcutCycleBlueLightLevelModifierFlagsRaw
+
         backgroundImageOpacity = try container.decodeIfPresent(Double.self, forKey: .backgroundImageOpacity) ?? defaults.backgroundImageOpacity
         mainWindowOpacity = try container.decodeIfPresent(Double.self, forKey: .mainWindowOpacity) ?? defaults.mainWindowOpacity
         reminderWindowOpacity = try container.decodeIfPresent(Double.self, forKey: .reminderWindowOpacity) ?? defaults.reminderWindowOpacity
