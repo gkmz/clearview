@@ -99,6 +99,7 @@ final class AppState: ObservableObject {
         reminderService.onBreakTriggered = { [weak self] in
             guard let self else { return }
             Task { @MainActor in
+                guard self.reminderEnabled, self.reminderPhase == .none else { return }
                 self.startReminderFlow()
             }
         }
@@ -404,6 +405,7 @@ final class AppState: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(safeSeconds)) { [weak self] in
             guard let self else { return }
             Task { @MainActor in
+                guard self.reminderPhase == .none else { return }
                 self.startReminderFlow()
             }
         }
@@ -436,6 +438,8 @@ final class AppState: ObservableObject {
     }
 
     private func startReminderFlow() {
+        guard reminderPhase == .none else { return }
+        reminderService.stop()
         // 先给用户 5 秒反应时间，再进入正式休息倒计时。
         reminderPhase = .preparing
         breakSecondsLeft = preparationSeconds
