@@ -6,12 +6,31 @@ import Foundation
 struct ClearViewApp: App {
     @StateObject private var appState = AppState()
 
+    private var menuBarTemplateIcon: NSImage? {
+        guard let url = Bundle.module.url(forResource: "icon", withExtension: "png"),
+              let image = NSImage(contentsOf: url) else {
+            return nil
+        }
+        // 关键流程：菜单栏使用专用透明模板图标，不直接使用彩色 App Logo，避免深色背景导致图标不可见。
+        image.isTemplate = true
+        // 关键流程：NSStatusItem 会参考 NSImage 的 point size；先压到菜单栏合适尺寸，避免大 PNG 被原始尺寸撑开。
+        image.size = NSSize(width: 18, height: 18)
+        return image
+    }
+
     var body: some Scene {
         MenuBarExtra {
             MenuBarView()
                 .environmentObject(appState)
         } label: {
-            Label("ClearView", systemImage: "eye")
+            if let image = menuBarTemplateIcon {
+                Image(nsImage: image)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 18, height: 18)
+            } else {
+                Label("ClearView", systemImage: "eye")
+            }
         }
     }
 }

@@ -29,6 +29,34 @@ ClearView 是一款轻量的 macOS 护眼提醒工具，帮助你在长时间屏
 3. 运行 `ClearViewApp` target。
 4. 点击菜单栏图标，选择 `打开 ClearView`。
 
+## 构建、打包与运行
+
+### Xcode（推荐）
+1. 打开 `Package.swift`。
+2. 选择 scheme：`ClearViewApp`。
+3. `Product -> Run` 本地运行。
+4. `Product -> Archive` 生成发布归档（`.xcarchive`），用于签名与分发。
+
+### 命令行
+```bash
+# Debug 构建
+swift build
+
+# 直接运行
+swift run ClearViewApp
+
+# Release 构建
+swift build -c release
+```
+
+Release 二进制默认输出位置：
+- `.build/release/ClearViewApp`
+
+直接运行 release 二进制：
+```bash
+./.build/release/ClearViewApp
+```
+
 ## 文档
 - [文档索引](docs/README.md)
 - [变更记录](docs/CHANGELOG.md)

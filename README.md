@@ -29,6 +29,34 @@ ClearView is a lightweight macOS eye-care reminder app that helps users keep hea
 3. Run target `ClearViewApp`.
 4. Click the menu bar icon and choose `打开 ClearView`.
 
+## Build, Package, Run
+
+### Xcode (recommended)
+1. Open `Package.swift`.
+2. Select scheme `ClearViewApp`.
+3. `Product -> Run` to launch locally.
+4. `Product -> Archive` to create a release archive (`.xcarchive`) for distribution/signing.
+
+### Command Line
+```bash
+# Debug build
+swift build
+
+# Run directly
+swift run ClearViewApp
+
+# Release build
+swift build -c release
+```
+
+Release binary output:
+- `.build/release/ClearViewApp`
+
+Quick launch from release binary:
+```bash
+./.build/release/ClearViewApp
+```
+
 ## Documentation
 - [Docs Index](docs/README.md)
 - [Changelog](docs/CHANGELOG.md)
