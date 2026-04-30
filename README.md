@@ -3,94 +3,119 @@
 English | [简体中文](README.zh-CN.md)
 
 [![Platform](https://img.shields.io/badge/platform-macOS%2013%2B-blue)](#requirements)
-[![Swift](https://img.shields.io/badge/Swift-5.9-orange)](#development)
+[![Swift](https://img.shields.io/badge/Swift-5.9-orange)](#requirements)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 
-ClearView is a lightweight macOS eye-care reminder app that helps users keep healthier screen-time rhythms.
+ClearView is a lightweight macOS menu bar app that helps users maintain healthier screen-time rhythms with periodic eye-break reminders and blue-light filter controls.
 
-> Version: `0.1.0` (release)
+> Current version: `0.1.0` (`release`)
 
-## Highlights
-- Menu bar based workflow with independent main panel.
-- Reminder lifecycle: work timer -> preparation -> break -> completion.
-- Reminder actions: complete, snooze, restart.
-- Blue light filter presets: Off / Light / Medium / Night.
+## Table of Contents
+- [Features](#features)
+- [Requirements](#requirements)
+- [Quick Start (Xcode)](#quick-start-xcode)
+- [Build and Test](#build-and-test)
+- [Project Structure](#project-structure)
+- [Configuration and Data](#configuration-and-data)
+- [Troubleshooting](#troubleshooting)
+- [Roadmap](#roadmap)
+- [Contributing](#contributing)
+- [Security](#security)
+- [Privacy](#privacy)
+- [License](#license)
+
+## Features
+- Menu bar based workflow with an independent main panel.
+- Reminder lifecycle: work timer → preparation countdown → break countdown → completion.
+- Reminder actions: complete now, snooze, and restart timing.
+- Blue-light filter presets: `Off`, `Light`, `Medium`, `Night`.
 - Multiple customizable global shortcuts.
-- Local-only persistence via `UserDefaults`.
+- Local-only settings persistence via `UserDefaults`.
 
 ## Requirements
 - macOS 13+
 - Xcode 15+ (recommended)
-- Swift Package Manager
+- Swift 5.9+
 
-## Quick Start
-1. Open Xcode.
-2. `File -> Open...` and select `Package.swift`.
-3. Run target `ClearViewApp`.
-4. Click the menu bar icon and choose `打开 ClearView`.
+## Quick Start (Xcode)
+1. Open `ClearView.xcodeproj` in Xcode.
+2. Select scheme `ClearView`.
+3. Run (`⌘R`).
+4. Click the menu bar icon and choose **打开 ClearView**.
 
-## Build, Package, Run
+## Build and Test
 
-### Xcode (recommended)
-1. Open `Package.swift`.
-2. Select scheme `ClearViewApp`.
-3. `Product -> Run` to launch locally.
-4. `Product -> Archive` to create a release archive (`.xcarchive`) for distribution/signing.
+### Xcode
+- Build: `Product -> Build`
+- Run: `Product -> Run`
+- Test: `Product -> Test`
+- Archive: `Product -> Archive`
 
-### Command Line
+### Command Line (SwiftPM)
 ```bash
-# Debug build
 swift build
-
-# Run directly
-swift run ClearViewApp
-
-# Release build
-swift build -c release
+swift test
 ```
 
-Release binary output:
-- `.build/release/ClearViewApp`
+## Project Structure
 
-Quick launch from release binary:
-```bash
-./.build/release/ClearViewApp
+```text
+ClearView/
+├── ClearView/                    # App source code
+│   ├── ClearViewApp.swift        # App entry + app state orchestration
+│   ├── MenuBarView.swift         # Menu bar menu UI
+│   ├── ContentView.swift         # Main panel UI
+│   ├── ReminderFloatingView.swift# Reminder popup UI
+│   ├── GlobalShortcutManager.swift
+│   ├── AppSettingsStore.swift    # Settings persistence + migration
+│   ├── BlueLightFilterService.swift
+│   ├── MainPanelController.swift
+│   ├── SettingsPanelController.swift
+│   ├── AboutPanelController.swift
+│   ├── AppVersion.swift
+│   └── Resources/                # Image assets (menu bar icon, backgrounds)
+├── ClearViewTests/               # Unit tests
+├── ClearViewUITests/             # UI tests
+├── docs/
+│   ├── README.md
+│   └── CHANGELOG.md
+├── CONTRIBUTING.md
+├── SECURITY.md
+├── Package.swift
+└── LICENSE
 ```
 
-## Documentation
-- [Docs Index](docs/README.md)
-- [Changelog](docs/CHANGELOG.md)
-- [Contributing Guide](CONTRIBUTING.md)
-- [Security Policy](SECURITY.md)
+## Configuration and Data
+- User settings are stored locally in `UserDefaults`.
+- No account system, cloud sync, or telemetry in `v0.1.0`.
+- Shortcut and UI preference migrations are handled in `AppSettingsStore`.
 
-## Development
+## Troubleshooting
+- **Menu bar icon not clear enough**: ensure the menu bar icon asset is a dedicated template-style icon (transparent background, simplified thick strokes).
+- **Global shortcut registration fails**: choose another key combination in settings (some combos are reserved by macOS or other apps).
+- **First launch blocked by macOS**: right-click `ClearView.app` and choose **Open** to confirm once.
 
-### Project Layout
-- `Sources/ClearViewApp/AppEntry.swift`: app state and orchestration
-- `Sources/ClearViewApp/ContentView.swift`: main UI
-- `Sources/ClearViewApp/ReminderFloatingView.swift`: reminder popup UI
-- `Sources/ClearViewApp/GlobalShortcutManager.swift`: global hotkeys
-- `Sources/ClearViewApp/AppSettingsStore.swift`: persistence and migration
-- `Sources/ClearViewApp/AboutPanelController.swift`: about panel
-- `Sources/ClearViewApp/SettingsPanelController.swift`: settings panel
-
-### Build
-Open `Package.swift` in Xcode and run `ClearViewApp`.
+## Roadmap
+See [docs/CHANGELOG.md](docs/CHANGELOG.md) for release notes and upcoming evolution from current baseline.
 
 ## Contributing
-Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting a PR.
+Contributions are welcome.
 
-## Support
-If you encounter an issue, open a GitHub issue with:
-- macOS version
-- ClearView version
-- reproduction steps
-- expected vs actual behavior
+Before opening a PR, please read [CONTRIBUTING.md](CONTRIBUTING.md).
+
+Recommended PR checklist:
+- Keep changes focused and small.
+- Update docs when behavior changes.
+- Ensure build and tests pass.
+- Avoid committing secrets or local environment files.
+
+## Security
+If you discover a vulnerability, please follow [SECURITY.md](SECURITY.md) and report it privately first.
 
 ## Privacy
-- No account system
-- No cloud sync
-- No telemetry in `v0.1.0`
+- No account system.
+- No cloud sync.
+- No telemetry in `v0.1.0`.
 
 ## License
 Licensed under Apache License 2.0. See [LICENSE](LICENSE).
