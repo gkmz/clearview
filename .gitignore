@@ -20,6 +20,16 @@ DerivedData/
 *.xcuserdatad/
 *.xccheckout
 *.moved-aside
+# Python local env
+.venv/
+
+# Local backups / exported folders
+ClearView */
+* [0-9][0-9]-[0-9][0-9]-[0-9][0-9]*/
+* [0-9][0-9]-[0-9][0-9]-[0-9][0-9] [0-9][0-9]-[0-9][0-9]-[0-9][0-9]/
+
+# Optional local test scratch
+test/
 
 # =========================
 # 调试与崩溃产物

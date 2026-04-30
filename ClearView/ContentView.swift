@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import Combine
 
 struct ContentView: View {
     @EnvironmentObject private var appState: AppState
@@ -108,7 +109,7 @@ struct ContentView: View {
         // 允许用户关闭背景图，直接回退为纯色背景，减少干扰。
         if appState.useBackgroundImage {
             // SwiftPM 资源中的图片用 Bundle.module 显式读取，避免名称解析失败。
-            if let url = Bundle.module.url(forResource: isDark ? "dark" : "light", withExtension: "jpg"),
+            if let url = Bundle.main.url(forResource: isDark ? "dark" : "light", withExtension: "jpg"),
                let image = NSImage(contentsOf: url) {
                 Image(nsImage: image)
                     .resizable()

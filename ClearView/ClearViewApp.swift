@@ -1,13 +1,21 @@
+//
+//  ClearViewApp.swift
+//  ClearView
+//
+//  Created by mo on 30.4.2026.
+//
+
 import AppKit
 import SwiftUI
 import Foundation
+import Combine
 
 @main
 struct ClearViewApp: App {
     @StateObject private var appState = AppState()
 
     private var menuBarTemplateIcon: NSImage? {
-        guard let url = Bundle.module.url(forResource: "icon", withExtension: "png"),
+        guard let url = Bundle.main.url(forResource: "icon", withExtension: "png"),
               let image = NSImage(contentsOf: url) else {
             return nil
         }
