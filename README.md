@@ -15,6 +15,7 @@ ClearView is a lightweight macOS menu bar app that helps users maintain healthie
 - [Requirements](#requirements)
 - [Quick Start (Xcode)](#quick-start-xcode)
 - [Build and Test](#build-and-test)
+- [DMG Packaging](#dmg-packaging)
 - [Project Structure](#project-structure)
 - [Configuration and Data](#configuration-and-data)
 - [Troubleshooting](#troubleshooting)
@@ -50,6 +51,38 @@ ClearView is a lightweight macOS menu bar app that helps users maintain healthie
 - Run: `Product -> Run`
 - Test: `Product -> Test`
 - Archive: `Product -> Archive`
+
+### DMG Packaging
+From the repository root (runs `xcodebuild` Release, then writes `dist/ClearView-<version>.dmg`, version read from the built app’s `CFBundleShortVersionString`):
+
+```bash
+./scripts/create-dmg.sh
+```
+
+If you already built `ClearView.app` in Xcode, pass the path to skip the compile step:
+
+```bash
+./scripts/create-dmg.sh /absolute/path/to/ClearView.app
+```
+
+### Install from DMG
+1. Open the generated DMG.
+2. Drag `ClearView.app` into `Applications`.
+3. Launch `ClearView` from `Applications`.
+
+### Unsigned App / Gatekeeper
+The default packaging flow uses `CODE_SIGNING_ALLOWED=NO`, so macOS may block first launch.
+
+If you see “ClearView.app can’t be opened because Apple cannot check it for malicious software”:
+1. In Finder, right-click `ClearView.app` in `Applications`, then click **Open**.
+2. Click **Open** again in the confirmation dialog.
+
+If you still see a block:
+1. Open **System Settings -> Privacy & Security**.
+2. In the Security section, allow opening `ClearView`.
+3. Launch the app again.
+
+For wider distribution, configure signing and notarization in Xcode and adjust your pipeline accordingly.
 
 ### Command Line (SwiftPM)
 ```bash

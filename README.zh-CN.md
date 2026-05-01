@@ -15,6 +15,7 @@ ClearView 是一款轻量的 macOS 菜单栏护眼应用，帮助你通过周期
 - [环境要求](#环境要求)
 - [快速开始（Xcode）](#快速开始xcode)
 - [构建与测试](#构建与测试)
+- [打包 DMG](#打包-dmg)
 - [项目结构](#项目结构)
 - [配置与数据](#配置与数据)
 - [常见问题](#常见问题)
@@ -50,6 +51,38 @@ ClearView 是一款轻量的 macOS 菜单栏护眼应用，帮助你通过周期
 - 运行：`Product -> Run`
 - 测试：`Product -> Test`
 - 归档：`Product -> Archive`
+
+### 打包 DMG
+在仓库根目录执行（会先 `xcodebuild` Release，再生成 `dist/ClearView-<版本>.dmg`，版本取自构建产物里的 `CFBundleShortVersionString`）：
+
+```bash
+./scripts/create-dmg.sh
+```
+
+若你已在 Xcode 里编译出 `ClearView.app`，可直接指定路径，跳过编译：
+
+```bash
+./scripts/create-dmg.sh /绝对路径/ClearView.app
+```
+
+### 从 DMG 安装
+1. 双击打开生成的 DMG。
+2. 将 `ClearView.app` 拖到「应用程序」。
+3. 从「应用程序」启动 `ClearView`。
+
+### 未签名应用与 Gatekeeper
+默认打包流程使用 `CODE_SIGNING_ALLOWED=NO`，首次启动时 macOS 可能拦截。
+
+如果出现“Apple 无法检查其是否包含恶意软件”之类提示：
+1. 在 Finder 的「应用程序」中右键 `ClearView.app`，选择“打开”。
+2. 在确认弹窗中再次点击“打开”。
+
+如果仍被拦截：
+1. 打开「系统设置 -> 隐私与安全性」。
+2. 在安全性区域允许打开 `ClearView`。
+3. 再次启动应用。
+
+说明：若要对外分发，需在 Xcode 中配置签名与公证，并调整打包流程。
 
 ### 命令行（SwiftPM）
 ```bash
