@@ -11,6 +11,10 @@ Desktop.ini
 .build/
 .swiftpm/
 
+# 本地 DMG / xcodebuild 脚本产物（scripts/create-dmg.sh）
+build/
+dist/
+
 # =========================
 # Xcode 构建与用户本地状态
 # =========================
