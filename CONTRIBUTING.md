@@ -7,9 +7,9 @@ Thanks for helping improve ClearView.
 - Open an issue first for large changes.
 
 ## Local Setup
-1. Open `Package.swift` in Xcode.
-2. Run target `ClearViewApp`.
-3. Verify with `swift build`.
+1. Open `ClearView.xcodeproj` in Xcode.
+2. Select scheme `ClearView`.
+3. Verify with `Product -> Build` (and `Product -> Test` if applicable).
 
 ## Pull Requests
 - Keep PRs focused and small.
