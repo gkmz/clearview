@@ -6,26 +6,36 @@ English | [简体中文](README.zh-CN.md)
 [![Swift](https://img.shields.io/badge/Swift-5.9-orange)](#requirements)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 
-ClearView is a lightweight macOS menu bar app that helps users maintain healthier screen-time rhythms with periodic eye-break reminders and blue-light filter controls.
+![](./docs/img/light-sy.png)
+
+ClearView is a very minimalist macOS app that helps users maintain healthier screen-time rhythms with periodic eye-break reminders and blue-light filter controls.
 
 > Current version: `0.1.0` (`release`)
 
 ## Table of Contents
-- [Features](#features)
-- [Requirements](#requirements)
-- [Quick Start (Xcode)](#quick-start-xcode)
-- [Build and Test](#build-and-test)
-- [DMG Packaging](#dmg-packaging)
-- [Project Structure](#project-structure)
-- [Configuration and Data](#configuration-and-data)
-- [Troubleshooting](#troubleshooting)
-- [Roadmap](#roadmap)
-- [Contributing](#contributing)
-- [Security](#security)
-- [Privacy](#privacy)
-- [License](#license)
+- [ClearView](#clearview)
+  - [Table of Contents](#table-of-contents)
+  - [Features](#features)
+  - [Requirements](#requirements)
+  - [Quick Start (Xcode)](#quick-start-xcode)
+  - [Build and Test](#build-and-test)
+    - [Xcode](#xcode)
+    - [DMG Packaging](#dmg-packaging)
+    - [Install from DMG](#install-from-dmg)
+    - [Unsigned App / Gatekeeper](#unsigned-app--gatekeeper)
+    - [Command Line (SwiftPM)](#command-line-swiftpm)
+  - [Project Structure](#project-structure)
+  - [Configuration and Data](#configuration-and-data)
+  - [Troubleshooting](#troubleshooting)
+  - [Roadmap](#roadmap)
+  - [Contributing](#contributing)
+  - [Security](#security)
+  - [Privacy](#privacy)
+  - [Screens](#screens)
+  - [License](#license)
 
 ## Features
+- Minimalist style, supporting both dark and light modes, following the system.
 - Menu bar based workflow with an independent main panel.
 - Reminder lifecycle: work timer → preparation countdown → break countdown → completion.
 - Reminder actions: complete now, snooze, and restart timing.
@@ -149,6 +159,13 @@ If you discover a vulnerability, please follow [SECURITY.md](SECURITY.md) and re
 - No account system.
 - No cloud sync.
 - No telemetry in `v0.1.0`.
+
+## Screens
+
+![](./docs/img/dark-sy.png)
+![](./docs/img/dark-hy.png)
+![](./docs/img/notice.png)
+![](./docs/img/settings.png)
 
 ## License
 Licensed under Apache License 2.0. See [LICENSE](LICENSE).
