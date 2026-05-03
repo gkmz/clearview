@@ -55,6 +55,8 @@ resolve_app() {
     -configuration Release \
     -derivedDataPath "${DERIVED}" \
     -destination "platform=macOS" \
+    ARCHS="arm64 x86_64" \
+    ONLY_ACTIVE_ARCH=NO \
     CODE_SIGNING_ALLOWED=NO \
     build >"${log}" 2>&1
 
@@ -66,9 +68,31 @@ resolve_app() {
   echo "${built}"
 }
 
+# 关键流程：发布包默认要求通用二进制（Apple Silicon + Intel），避免用户下载后因架构不匹配无法运行。
+verify_universal_binary() {
+  local app="$1"
+  local bin="${app}/Contents/MacOS/ClearView"
+  if [[ ! -f "${bin}" ]]; then
+    echo "error: 未找到可执行文件 ${bin}" >&2
+    exit 1
+  fi
+
+  local archs
+  archs="$(lipo -archs "${bin}" 2>/dev/null || true)"
+  if [[ "${archs}" != *"arm64"* || "${archs}" != *"x86_64"* ]]; then
+    echo "error: 当前产物不是通用二进制，检测到架构: ${archs:-<unknown>}" >&2
+    echo "error: 期望同时包含 arm64 与 x86_64，请检查 Xcode 工程 ARCHS / EXCLUDED_ARCHS 配置。" >&2
+    exit 1
+  fi
+  echo "==> 架构校验通过: ${archs}"
+}
+
 APP="$(resolve_app "${1:-}")"
 VERSION="$(read_app_marketing_version "${APP}")"
 DMG="${ROOT}/dist/ClearView-${VERSION}.dmg"
+
+# 关键流程：先验架构再打包，确保发出去的 DMG 对两类芯片都可安装运行。
+verify_universal_binary "${APP}"
 
 echo "==> 使用 App: ${APP}"
 echo "==> 版本: ${VERSION} → ${DMG##*/}"
