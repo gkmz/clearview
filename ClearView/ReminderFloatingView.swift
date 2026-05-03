@@ -8,11 +8,10 @@ struct ReminderFloatingView: View {
     private var textPrimary: Color { Color.white.opacity(0.94) }
     private var textSecondary: Color { Color.white.opacity(0.72) }
     private var opacityFactor: Double { appState.reminderWindowOpacity }
+    private var isFullyOpaque: Bool { opacityFactor >= 0.999 }
     private var panelFill: Color {
-        let opacity = isDark
-            ? 0.24 + 0.62 * opacityFactor
-            : 0.20 + 0.66 * opacityFactor
-        return Color.black.opacity(opacity)
+        // 关键语义：当滑杆为 100% 时，提示窗主体必须真正不透明，不能再做二次缩放。
+        Color.black.opacity(opacityFactor)
     }
     private var panelBorder: Color { Color.white.opacity((isDark ? 0.20 : 0.24) * opacityFactor) }
     private var buttonFill: Color { Color.white.opacity((isDark ? 0.10 : 0.12) * opacityFactor) }
@@ -84,6 +83,8 @@ struct ReminderFloatingView: View {
                         endPoint: .bottom
                     )
                 )
+                // 关键流程：满不透明时关闭玻璃高光叠层，避免肉眼感知到“还有一点透”。
+                .opacity(isFullyOpaque ? 0 : 1)
 
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .stroke(panelBorder, lineWidth: 1)
@@ -137,7 +138,12 @@ struct ReminderFloatingView: View {
                             : (isPrimaryAction ? 0.98 : 0.90)
                     )
                 )
-                .background(isDark ? AnyShapeStyle(.ultraThinMaterial) : AnyShapeStyle(Color.clear))
+                // 关键流程：满不透明时移除材质层，防止按钮区域继续采样背后内容。
+                .background(
+                    isDark && !isFullyOpaque
+                        ? AnyShapeStyle(.ultraThinMaterial)
+                        : AnyShapeStyle(Color.clear)
+                )
                 .background(
                     isDisabled
                         ? buttonFill.opacity(0.42)

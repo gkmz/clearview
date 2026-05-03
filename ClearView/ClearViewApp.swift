@@ -420,15 +420,21 @@ final class AppState: ObservableObject {
     }
 
     func skipBreak() {
+        // 关键流程：用户点击“稍后/跳过”后会继续进入工作倒计时，按钮状态也必须回到“运行中”。
+        reminderEnabled = true
         endReminderFlow()
         statusText = "先继续也可以"
         reminderService.start(intervalMinutes: workIntervalMinutes)
+        persistSettings()
     }
 
     func snoozeBreak(minutes: Int = 5) {
+        // 关键流程：延迟提醒会恢复主倒计时，需同步开启 reminderEnabled，避免主界面仍显示“开始”按钮。
+        reminderEnabled = true
         endReminderFlow()
         statusText = "\(minutes)分钟后再提醒"
         reminderService.snooze(minutes: minutes)
+        persistSettings()
     }
 
     func quitApplication() {
