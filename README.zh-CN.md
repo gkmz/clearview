@@ -23,7 +23,6 @@ ClearView 是一款极简的 macOS 菜单栏护眼应用，帮助你通过周期
     - [打包 DMG](#打包-dmg)
     - [从 DMG 安装](#从-dmg-安装)
     - [未签名应用与 Gatekeeper](#未签名应用与-gatekeeper)
-    - [命令行（SwiftPM）](#命令行swiftpm)
   - [项目结构](#项目结构)
   - [配置与数据](#配置与数据)
   - [常见问题](#常见问题)
@@ -94,11 +93,7 @@ ClearView 是一款极简的 macOS 菜单栏护眼应用，帮助你通过周期
 
 说明：若要对外分发，需在 Xcode 中配置签名与公证，并调整打包流程。
 
-### 命令行（SwiftPM）
-```bash
-swift build
-swift test
-```
+> 构建策略：`v0.1.0` 仅支持通过 Xcode / `xcodebuild` 构建，以确保产出完整的 macOS `.app` 包（图标资源、Bundle 元信息与打包流程）。
 
 ## 项目结构
 
@@ -165,7 +160,7 @@ ClearView/
 ![](./docs/img/dark-sy.png)
 ![](./docs/img/dark-hy.png)
 ![](./docs/img/notice.png)
-![](./docs/img/settings.png
+![](./docs/img/settings.png)
 
 ## 许可证
 本项目采用 Apache License 2.0，详见 [LICENSE](LICENSE)。

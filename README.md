@@ -23,7 +23,6 @@ ClearView is a very minimalist macOS app that helps users maintain healthier scr
     - [DMG Packaging](#dmg-packaging)
     - [Install from DMG](#install-from-dmg)
     - [Unsigned App / Gatekeeper](#unsigned-app--gatekeeper)
-    - [Command Line (SwiftPM)](#command-line-swiftpm)
   - [Project Structure](#project-structure)
   - [Configuration and Data](#configuration-and-data)
   - [Troubleshooting](#troubleshooting)
@@ -94,11 +93,7 @@ If you still see a block:
 
 For wider distribution, configure signing and notarization in Xcode and adjust your pipeline accordingly.
 
-### Command Line (SwiftPM)
-```bash
-swift build
-swift test
-```
+> Build policy: `v0.1.0` is supported via Xcode / `xcodebuild` only, to ensure a complete macOS `.app` bundle (icon assets, bundle metadata, and packaging flow).
 
 ## Project Structure
 
