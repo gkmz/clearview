@@ -35,6 +35,9 @@ ClearView */
 # Optional local test scratch
 test/
 
+# Claude local settings
+.claude/settings.local.json
+
 # =========================
 # 调试与崩溃产物
 # =========================
