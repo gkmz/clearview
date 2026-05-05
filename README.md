@@ -17,12 +17,15 @@ ClearView is a very minimalist macOS app that helps users maintain healthier scr
   - [Table of Contents](#table-of-contents)
   - [Features](#features)
   - [Requirements](#requirements)
+  - [Install and Use](#install-and-use)
+    - [Download from Releases](#download-from-releases)
+    - [Bypass Gatekeeper](#bypass-gatekeeper)
+    - [Start Using ClearView](#start-using-clearview)
+    - [Default Shortcuts](#default-shortcuts)
   - [Quick Start (Xcode)](#quick-start-xcode)
   - [Build and Test](#build-and-test)
     - [Xcode](#xcode)
     - [DMG Packaging](#dmg-packaging)
-    - [Install from DMG](#install-from-dmg)
-    - [Unsigned App / Gatekeeper](#unsigned-app--gatekeeper)
   - [Project Structure](#project-structure)
   - [Configuration and Data](#configuration-and-data)
   - [Troubleshooting](#troubleshooting)
@@ -44,10 +47,59 @@ ClearView is a very minimalist macOS app that helps users maintain healthier scr
 
 ## Requirements
 - macOS 13+
+
+If you only want to install and use ClearView, you do not need Xcode or Swift.
+
+## Install and Use
+
+### Download from Releases
+1. Open this repository’s **Releases** page.
+2. Download the latest `ClearView-<version>.dmg`.
+3. Double-click the DMG to open it.
+4. Drag `ClearView.app` into the `Applications` folder.
+5. Launch `ClearView` from `Applications`.
+
+### Bypass Gatekeeper
+The current release may not be signed and notarized with an Apple Developer account. On first launch, macOS may show a warning such as “Apple cannot check it for malicious software” or block the app.
+
+Recommended path:
+1. Open `Applications` in Finder.
+2. Find `ClearView.app`, then Control-click or right-click it.
+3. Choose **Open**.
+4. Click **Open** again in the confirmation dialog.
+
+If macOS still blocks the app, allow it in System Settings:
+1. Try launching `ClearView` once from `Applications` so macOS creates a blocked-app record.
+2. Open **System Settings**.
+3. Go to **Privacy & Security**.
+4. Scroll down to the **Security** section.
+5. Find a message like “`ClearView` was blocked from use because it is not from an identified developer.”
+6. Click **Open Anyway** or **Allow**.
+7. Enter your Mac login password or confirm with Touch ID if prompted.
+8. Launch `ClearView` again from `Applications`, then click **Open** in the confirmation dialog.
+
+Do not disable Gatekeeper globally. Only allow this app if you trust the download source.
+
+### Start Using ClearView
+After launch, `ClearView` appears in the macOS menu bar. Click the menu bar icon to open the main panel, adjust reminder timing, switch blue-light filter presets, and open settings.
+
+### Default Shortcuts
+The default shortcuts are listed below and can be changed in settings:
+
+| Action | Shortcut |
+| --- | --- |
+| Open main panel | `⌘⇧Space` |
+| Pause/resume reminders | `⌘⇧P` |
+| Snooze reminder | `⌘⇧S` |
+| Switch eye-care mode | `⌘⇧L` |
+
+## Quick Start (Xcode)
+The following steps are for developers.
+
+Requirements:
 - Xcode 15+ (recommended)
 - Swift 5.9+
 
-## Quick Start (Xcode)
 1. Open `ClearView.xcodeproj` in Xcode.
 2. Select scheme `ClearView`.
 3. Run (`⌘R`).
@@ -74,24 +126,7 @@ If you already built `ClearView.app` in Xcode, pass the path to skip the compile
 ./scripts/create-dmg.sh /absolute/path/to/ClearView.app
 ```
 
-### Install from DMG
-1. Open the generated DMG.
-2. Drag `ClearView.app` into `Applications`.
-3. Launch `ClearView` from `Applications`.
-
-### Unsigned App / Gatekeeper
-The default packaging flow uses `CODE_SIGNING_ALLOWED=NO`, so macOS may block first launch.
-
-If you see “ClearView.app can’t be opened because Apple cannot check it for malicious software”:
-1. In Finder, right-click `ClearView.app` in `Applications`, then click **Open**.
-2. Click **Open** again in the confirmation dialog.
-
-If you still see a block:
-1. Open **System Settings -> Privacy & Security**.
-2. In the Security section, allow opening `ClearView`.
-3. Launch the app again.
-
-For wider distribution, configure signing and notarization in Xcode and adjust your pipeline accordingly.
+The default packaging flow uses `CODE_SIGNING_ALLOWED=NO`. For wider distribution, configure signing and notarization in Xcode and adjust your pipeline accordingly.
 
 > Build policy: `v0.1.0` is supported via Xcode / `xcodebuild` only, to ensure a complete macOS `.app` bundle (icon assets, bundle metadata, and packaging flow).
 
@@ -131,7 +166,7 @@ ClearView/
 ## Troubleshooting
 - **Menu bar icon not clear enough**: ensure the menu bar icon asset is a dedicated template-style icon (transparent background, simplified thick strokes).
 - **Global shortcut registration fails**: choose another key combination in settings (some combos are reserved by macOS or other apps).
-- **First launch blocked by macOS**: right-click `ClearView.app` and choose **Open** to confirm once.
+- **First launch blocked by macOS**: see [Bypass Gatekeeper](#bypass-gatekeeper), right-click `ClearView.app`, and choose **Open** to confirm once.
 
 ## Roadmap
 See [docs/CHANGELOG.md](docs/CHANGELOG.md) for release notes and upcoming evolution from current baseline.
