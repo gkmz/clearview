@@ -4,6 +4,9 @@ struct ReminderFloatingView: View {
     @EnvironmentObject private var appState: AppState
     @Environment(\.colorScheme) private var colorScheme
 
+    /// 当前提醒强度，驱动面板内边距与字号层级。
+    private var intensity: ReminderIntensityLevel { appState.reminderIntensity }
+
     private var isDark: Bool { colorScheme == .dark }
     private var textPrimary: Color { Color.white.opacity(0.94) }
     private var textSecondary: Color { Color.white.opacity(0.72) }
@@ -21,20 +24,20 @@ struct ReminderFloatingView: View {
         ZStack {
             panelBackground
 
-            VStack(spacing: 16) {
+            VStack(spacing: intensity.vStackSpacing) {
                 titleView
 
                 StableText(
                     "\(appState.breakSecondsLeft)",
-                    size: 84,
+                    size: intensity.countdownFontSize,
                     weight: .bold,
                     alpha: 0.94,
                     usesMonospacedDigit: true
                 )
-                .frame(height: 90)
+                .frame(height: intensity.countdownFrameHeight)
                 .padding(.top, -2)
 
-                HStack(spacing: 22) {
+                HStack(spacing: intensity.actionHStackSpacing) {
                     if appState.reminderPhase != .completed {
                         floatingIconButton(systemName: "clock.arrow.circlepath") {
                             appState.snoozeBreak(minutes: 5)
@@ -48,30 +51,31 @@ struct ReminderFloatingView: View {
                 }
                 .padding(.top, 4)
 
-                StableText(messageText, size: 17, weight: .medium, alpha: 0.78)
-                    .frame(height: 22)
+                StableText(messageText, size: intensity.messageFontSize, weight: .medium, alpha: 0.78)
+                    .frame(height: intensity.messageFrameHeight)
                     .padding(.top, 2)
             }
-            .padding(.horizontal, 40)
-            .padding(.vertical, 30)
+            .padding(.horizontal, intensity.horizontalPadding)
+            .padding(.vertical, intensity.verticalPadding)
             .id(appState.reminderPhase)
             .transaction { transaction in
                 transaction.animation = nil
             }
         }
-        .frame(width: 560, height: 300)
-        .shadow(color: .black.opacity(isDark ? 0.30 : 0.20), radius: 30, x: 0, y: 18)
+        .frame(width: intensity.panelWidth, height: intensity.panelHeight)
+        .shadow(color: .black.opacity(isDark ? 0.30 : 0.20), radius: intensity.shadowRadius, x: 0, y: 18)
         .transaction { transaction in
             transaction.animation = nil
         }
     }
 
     private var panelBackground: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
+        let r = intensity.cornerRadius
+        return ZStack {
+            RoundedRectangle(cornerRadius: r, style: .continuous)
                 .fill(panelFill)
 
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
+            RoundedRectangle(cornerRadius: r, style: .continuous)
                 .fill(
                     LinearGradient(
                         colors: [
@@ -86,10 +90,10 @@ struct ReminderFloatingView: View {
                 // 关键流程：满不透明时关闭玻璃高光叠层，避免肉眼感知到“还有一点透”。
                 .opacity(isFullyOpaque ? 0 : 1)
 
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
+            RoundedRectangle(cornerRadius: r, style: .continuous)
                 .stroke(panelBorder, lineWidth: 1)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: r, style: .continuous))
         .allowsHitTesting(false)
     }
 
@@ -106,8 +110,8 @@ struct ReminderFloatingView: View {
     }
 
     private func titleTextView(_ text: String) -> some View {
-        StableText(text, size: 26, weight: .semibold, alpha: 0.94)
-            .frame(height: 34)
+        StableText(text, size: intensity.titleFontSize, weight: .semibold, alpha: 0.94)
+            .frame(height: intensity.titleFrameHeight)
     }
 
     private var messageText: String {
@@ -129,8 +133,8 @@ struct ReminderFloatingView: View {
         let isPrimaryAction = systemName == "play.fill"
         return Button(action: action) {
             Image(systemName: systemName)
-                .font(.system(size: 24, weight: .semibold))
-                .frame(width: 58, height: 58)
+                .font(.system(size: intensity.actionIconPointSize, weight: .semibold))
+                .frame(width: intensity.actionButtonSide, height: intensity.actionButtonSide)
                 .foregroundStyle(
                     textPrimary.opacity(
                         isDisabled

@@ -5,6 +5,171 @@ struct ShortcutBinding: Codable, Equatable {
     var modifierFlagsRaw: UInt
 }
 
+/// 提醒弹窗醒目程度：轻度更克制、重度更抢眼，默认中度兼顾多数用户。
+enum ReminderIntensityLevel: String, CaseIterable, Codable, Equatable {
+    case light
+    case medium
+    case strong
+
+    var title: String {
+        switch self {
+        case .light:
+            return "轻度（更克制）"
+        case .medium:
+            return "中度（默认）"
+        case .strong:
+            return "重度（更醒目）"
+        }
+    }
+
+    var shortTitle: String {
+        switch self {
+        case .light: return "轻度"
+        case .medium: return "中度"
+        case .strong: return "重度"
+        }
+    }
+
+    /// 面板宽度（与 `ReminderFloatingView` 外框一致）。
+    var panelWidth: CGFloat {
+        switch self {
+        case .light: return 480
+        case .medium: return 560
+        case .strong: return 640
+        }
+    }
+
+    var panelHeight: CGFloat {
+        switch self {
+        case .light: return 268
+        case .medium: return 300
+        case .strong: return 340
+        }
+    }
+
+    var cornerRadius: CGFloat {
+        switch self {
+        case .light: return 16
+        case .medium: return 20
+        case .strong: return 24
+        }
+    }
+
+    var vStackSpacing: CGFloat {
+        switch self {
+        case .light: return 12
+        case .medium: return 16
+        case .strong: return 20
+        }
+    }
+
+    var horizontalPadding: CGFloat {
+        switch self {
+        case .light: return 32
+        case .medium: return 40
+        case .strong: return 48
+        }
+    }
+
+    var verticalPadding: CGFloat {
+        switch self {
+        case .light: return 24
+        case .medium: return 30
+        case .strong: return 34
+        }
+    }
+
+    var countdownFontSize: CGFloat {
+        switch self {
+        case .light: return 70
+        case .medium: return 84
+        case .strong: return 96
+        }
+    }
+
+    var countdownFrameHeight: CGFloat {
+        switch self {
+        case .light: return 76
+        case .medium: return 90
+        case .strong: return 102
+        }
+    }
+
+    var titleFontSize: CGFloat {
+        switch self {
+        case .light: return 22
+        case .medium: return 26
+        case .strong: return 30
+        }
+    }
+
+    var titleFrameHeight: CGFloat {
+        switch self {
+        case .light: return 30
+        case .medium: return 34
+        case .strong: return 38
+        }
+    }
+
+    var messageFontSize: CGFloat {
+        switch self {
+        case .light: return 15
+        case .medium: return 17
+        case .strong: return 19
+        }
+    }
+
+    var messageFrameHeight: CGFloat {
+        switch self {
+        case .light: return 20
+        case .medium: return 22
+        case .strong: return 24
+        }
+    }
+
+    var actionIconPointSize: CGFloat {
+        switch self {
+        case .light: return 20
+        case .medium: return 24
+        case .strong: return 28
+        }
+    }
+
+    var actionButtonSide: CGFloat {
+        switch self {
+        case .light: return 52
+        case .medium: return 58
+        case .strong: return 64
+        }
+    }
+
+    var actionHStackSpacing: CGFloat {
+        switch self {
+        case .light: return 18
+        case .medium: return 22
+        case .strong: return 26
+        }
+    }
+
+    var shadowRadius: CGFloat {
+        switch self {
+        case .light: return 22
+        case .medium: return 30
+        case .strong: return 38
+        }
+    }
+
+    static func fromSettingsKey(_ key: String) -> ReminderIntensityLevel {
+        switch key {
+        case "light": return .light
+        case "strong": return .strong
+        default: return .medium
+        }
+    }
+
+    var settingsKey: String { rawValue }
+}
+
 enum ShortcutAction: String, CaseIterable, Codable {
     case toggleMainPanel
     case toggleReminder
@@ -61,6 +226,8 @@ struct AppSettings: Codable {
     var mainWindowOpacity: Double
     var reminderWindowOpacity: Double
     var settingsWindowOpacity: Double
+    /// 提醒弹窗强度：`light` / `medium` / `strong`，缺省按中度解码。
+    var reminderIntensityKey: String
 
     static let `default` = AppSettings(
         reminderEnabled: true,
@@ -82,7 +249,8 @@ struct AppSettings: Codable {
         backgroundImageOpacity: 1.0,
         mainWindowOpacity: 0.80,
         reminderWindowOpacity: 0.78,
-        settingsWindowOpacity: 0.78
+        settingsWindowOpacity: 0.78,
+        reminderIntensityKey: ReminderIntensityLevel.medium.settingsKey
     )
 
     enum CodingKeys: String, CodingKey {
@@ -106,6 +274,7 @@ struct AppSettings: Codable {
         case mainWindowOpacity
         case reminderWindowOpacity
         case settingsWindowOpacity
+        case reminderIntensityKey
     }
 
     init(
@@ -128,7 +297,8 @@ struct AppSettings: Codable {
         backgroundImageOpacity: Double,
         mainWindowOpacity: Double,
         reminderWindowOpacity: Double,
-        settingsWindowOpacity: Double
+        settingsWindowOpacity: Double,
+        reminderIntensityKey: String
     ) {
         self.reminderEnabled = reminderEnabled
         self.workIntervalMinutes = workIntervalMinutes
@@ -150,6 +320,7 @@ struct AppSettings: Codable {
         self.mainWindowOpacity = mainWindowOpacity
         self.reminderWindowOpacity = reminderWindowOpacity
         self.settingsWindowOpacity = settingsWindowOpacity
+        self.reminderIntensityKey = reminderIntensityKey
     }
 
     init(from decoder: Decoder) throws {
@@ -181,6 +352,7 @@ struct AppSettings: Codable {
         mainWindowOpacity = try container.decodeIfPresent(Double.self, forKey: .mainWindowOpacity) ?? defaults.mainWindowOpacity
         reminderWindowOpacity = try container.decodeIfPresent(Double.self, forKey: .reminderWindowOpacity) ?? defaults.reminderWindowOpacity
         settingsWindowOpacity = try container.decodeIfPresent(Double.self, forKey: .settingsWindowOpacity) ?? defaults.settingsWindowOpacity
+        reminderIntensityKey = try container.decodeIfPresent(String.self, forKey: .reminderIntensityKey) ?? defaults.reminderIntensityKey
     }
 }
 

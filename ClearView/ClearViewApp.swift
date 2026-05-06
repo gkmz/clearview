@@ -71,6 +71,8 @@ final class AppState: ObservableObject {
     @Published var mainWindowOpacity: Double = 0.80
     @Published var reminderWindowOpacity: Double = 0.78
     @Published var settingsWindowOpacity: Double = 0.78
+    /// 提醒弹窗强度（轻/中/重），控制面板尺寸与字号醒目度。
+    @Published var reminderIntensity: ReminderIntensityLevel = .medium
     @Published var statusText: String = "陪你护眼"
     @Published var reminderPhase: ReminderPhase = .none
     @Published var breakSecondsLeft: Int = 20
@@ -378,6 +380,14 @@ final class AppState: ObservableObject {
         persistSettings()
     }
 
+    func updateReminderIntensity(_ level: ReminderIntensityLevel) {
+        reminderIntensity = level
+        statusText = "提醒强度：\(level.shortTitle)"
+        persistSettings()
+        // 关键流程：弹窗已展示时立即重算窗口几何，避免用户改设置后仍看到旧尺寸。
+        reminderPanel?.syncReminderPanelGeometryIfVisible()
+    }
+
     func updateSettingsWindowOpacity(_ value: Double) {
         // 设置窗和关于窗共用同一透明度，保持辅助面板视觉一致。
         settingsWindowOpacity = min(max(value, 0.25), 1.0)
@@ -544,6 +554,7 @@ final class AppState: ObservableObject {
         mainWindowOpacity = normalizedMainWindowOpacity(settings.mainWindowOpacity, useBackgroundImage: useBackgroundImage)
         reminderWindowOpacity = min(max(settings.reminderWindowOpacity, 0.25), 1.0)
         settingsWindowOpacity = min(max(settings.settingsWindowOpacity, 0.25), 1.0)
+        reminderIntensity = ReminderIntensityLevel.fromSettingsKey(settings.reminderIntensityKey)
 
         // 应用启动时恢复倒计时基础值，避免界面显示与配置不一致。
         secondsUntilBreak = workIntervalMinutes * 60
@@ -580,7 +591,8 @@ final class AppState: ObservableObject {
             backgroundImageOpacity: backgroundImageOpacity,
             mainWindowOpacity: mainWindowOpacity,
             reminderWindowOpacity: reminderWindowOpacity,
-            settingsWindowOpacity: settingsWindowOpacity
+            settingsWindowOpacity: settingsWindowOpacity,
+            reminderIntensityKey: reminderIntensity.settingsKey
         )
         settingsStore.save(settings)
     }
@@ -590,22 +602,28 @@ final class AppState: ObservableObject {
 final class ReminderPanelController {
     private weak var appState: AppState?
     private var panel: NSPanel?
-    private let panelSize = NSSize(width: 560, height: 300)
 
     init(appState: AppState) {
         self.appState = appState
     }
 
+    /// 关键流程：根据当前提醒强度计算面板像素尺寸，与 `ReminderFloatingView` 外框一致。
+    private static func panelSize(for appState: AppState) -> NSSize {
+        let i = appState.reminderIntensity
+        return NSSize(width: i.panelWidth, height: i.panelHeight)
+    }
+
     func show() {
         guard let appState else { return }
         if panel == nil {
+            let size = Self.panelSize(for: appState)
             let newPanel = ReminderPanel(
-                contentRect: NSRect(origin: .zero, size: panelSize),
+                contentRect: NSRect(origin: .zero, size: size),
                 styleMask: [.borderless, .nonactivatingPanel],
                 backing: .buffered,
                 defer: false
             )
-            newPanel.contentView = makeHostingView(appState: appState)
+            newPanel.contentView = makeHostingView(appState: appState, size: size)
             newPanel.isOpaque = false
             newPanel.backgroundColor = .clear
             newPanel.hasShadow = true
@@ -617,23 +635,28 @@ final class ReminderPanelController {
             newPanel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
             newPanel.isReleasedWhenClosed = false
             panel = newPanel
-        } else {
-            refresh()
         }
-
-        positionAtTopCenter()
-        applyPanelCornerMask()
+        // 关键流程：无论新建或复用面板，统一走 refresh 以同步强度对应的尺寸与圆角。
+        refresh()
         // 用较高层级的独立面板前置，避免被 MenuBarExtra 菜单窗口吞掉。
         panel?.orderFrontRegardless()
         panel?.makeKey()
     }
 
+    /// 关键流程：设置里切换提醒强度且弹窗正在显示时，同步窗口尺寸与圆角，避免只改内部视图而外框不变。
+    func syncReminderPanelGeometryIfVisible() {
+        guard let appState, appState.reminderPhase != .none else { return }
+        refresh()
+    }
+
     func refresh() {
         guard let appState, let panel else { return }
+        let size = Self.panelSize(for: appState)
         // 透明 NSPanel 复用同一个 SwiftUI 图层时，阶段切换可能留下上一帧残影。
         // 这里直接重建 HostingView，让 AppKit 清空透明缓冲区后再绘制当前状态。
-        panel.contentView = makeHostingView(appState: appState)
+        panel.contentView = makeHostingView(appState: appState, size: size)
         applyPanelCornerMask()
+        positionAtTopCenter()
         panel.contentView?.needsDisplay = true
         panel.displayIfNeeded()
         panel.invalidateShadow()
@@ -652,10 +675,10 @@ final class ReminderPanelController {
         panel?.orderOut(nil)
     }
 
-    private func makeHostingView(appState: AppState) -> NSView {
+    private func makeHostingView(appState: AppState, size: NSSize) -> NSView {
         let root = ReminderFloatingView()
             .environmentObject(appState)
-            .frame(width: panelSize.width, height: panelSize.height)
+            .frame(width: size.width, height: size.height)
 
         let hostingView = NSHostingView(rootView: root)
         hostingView.wantsLayer = true
@@ -667,14 +690,15 @@ final class ReminderPanelController {
     }
 
     private func positionAtTopCenter() {
-        guard let panel else { return }
+        guard let appState, let panel else { return }
+        let size = Self.panelSize(for: appState)
         let mouseLocation = NSEvent.mouseLocation
         let screen = NSScreen.screens.first { NSMouseInRect(mouseLocation, $0.frame, false) }
             ?? NSScreen.main
             ?? NSScreen.screens.first
         guard let visibleFrame = screen?.visibleFrame else { return }
-        let width = panelSize.width
-        let height = panelSize.height
+        let width = size.width
+        let height = size.height
         let x = visibleFrame.midX - width / 2
         // 放大后的提示窗仍保持顶部居中，并留出呼吸空间避免贴近菜单栏。
         let y = visibleFrame.maxY - height - 90
@@ -682,9 +706,9 @@ final class ReminderPanelController {
     }
 
     private func applyPanelCornerMask() {
-        guard let panel, let contentView = panel.contentView else { return }
+        guard let appState, let panel, let contentView = panel.contentView else { return }
         contentView.wantsLayer = true
-        contentView.layer?.cornerRadius = 20
+        contentView.layer?.cornerRadius = appState.reminderIntensity.cornerRadius
         contentView.layer?.cornerCurve = .continuous
         contentView.layer?.masksToBounds = true
     }

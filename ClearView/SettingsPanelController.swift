@@ -246,6 +246,9 @@ private struct SettingsPanelView: View {
                     range: appState.useBackgroundImage ? 0.0...1.0 : 0.20...1.0
                 )
 
+                // 关键流程：轻/中/重控制提醒面板尺寸与字号，对应不同「需要被提醒」的程度。
+                reminderIntensityRow()
+
                 opacitySettingRow(
                     title: "提示窗透明度",
                     value: Binding(
@@ -332,6 +335,51 @@ private struct SettingsPanelView: View {
         .onTapGesture {
             if !isExpanded.wrappedValue {
                 toggleSection()
+            }
+        }
+    }
+
+    private func reminderIntensityRow() -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .top) {
+                Text("提醒强度")
+                    .font(.caption)
+                    .foregroundStyle(textPrimary)
+                Spacer()
+                Text(appState.reminderIntensity.title)
+                    .font(.caption)
+                    .foregroundStyle(textSecondary.opacity(0.88))
+                    .multilineTextAlignment(.trailing)
+                    .lineLimit(2)
+                    .frame(maxWidth: 160, alignment: .trailing)
+            }
+
+            HStack(spacing: 8) {
+                ForEach(ReminderIntensityLevel.allCases, id: \.self) { level in
+                    let isSelected = appState.reminderIntensity == level
+                    Button {
+                        appState.updateReminderIntensity(level)
+                    } label: {
+                        Text(level.shortTitle)
+                            .font(.caption.weight(isSelected ? .bold : .semibold))
+                            .frame(width: 56, height: 28)
+                            .foregroundStyle(isSelected ? Color.white : textPrimary)
+                            .background(isSelected ? Color.white.opacity(isDark ? 0.34 : 0.30) : Color.clear)
+                            .modifier(
+                                SettingsGlassButtonModifier(
+                                    cornerRadius: 14,
+                                    intensity: isSelected ? 0.60 : 1.0,
+                                    tint: buttonTint,
+                                    border: isSelected ? Color.white.opacity(0.50) : buttonBorder
+                                )
+                            )
+                            .scaleEffect(isSelected ? 1.04 : 1.0)
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .focusable(false)
+                    .hoverTooltip(level.title)
+                }
             }
         }
     }
