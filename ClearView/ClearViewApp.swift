@@ -49,12 +49,18 @@ final class AppState: ObservableObject {
         case none
         case preparing
         case resting
+        case pomodoroResting
         case completed
     }
 
     @Published var reminderEnabled = true
+    @Published var rhythmMode: RhythmMode = .eyeCare
     @Published var workIntervalMinutes: Int = 20
     @Published var breakDurationSeconds: Int = 20
+    @Published var pomodoroFocusMinutes: Int = 25
+    @Published var pomodoroBreakMinutes: Int = 5
+    @Published var pomodoroEyeBreakEnabled = true
+    @Published var mergeEyeBreakThresholdSeconds: Int = 120
     @Published var secondsUntilBreak: Int = 20 * 60
     @Published var filterLevel: BlueLightLevel = .off
     @Published var useBackgroundImage = true
@@ -76,6 +82,7 @@ final class AppState: ObservableObject {
     @Published var statusText: String = "陪你护眼"
     @Published var reminderPhase: ReminderPhase = .none
     @Published var breakSecondsLeft: Int = 20
+    @Published var activeBreakKind: RhythmBreakKind = .eye
 
     let reminderService = ReminderService()
     let blueLightService = BlueLightFilterService()
@@ -91,23 +98,23 @@ final class AppState: ObservableObject {
     init() {
         loadSettings()
 
-        reminderService.onTick = { [weak self] secondsLeft in
+        reminderService.onTick = { [weak self] tick in
             guard let self else { return }
             Task { @MainActor in
-                self.secondsUntilBreak = secondsLeft
+                self.secondsUntilBreak = tick.focusSecondsRemaining
             }
         }
 
-        reminderService.onBreakTriggered = { [weak self] in
+        reminderService.onBreakTriggered = { [weak self] kind in
             guard let self else { return }
             Task { @MainActor in
                 guard self.reminderEnabled, self.reminderPhase == .none else { return }
-                self.startReminderFlow()
+                self.startReminderFlow(kind: kind)
             }
         }
 
         if reminderEnabled {
-            reminderService.start(intervalMinutes: workIntervalMinutes)
+            reminderService.start(configuration: rhythmConfiguration)
         } else {
             reminderService.stop()
         }
@@ -205,7 +212,7 @@ final class AppState: ObservableObject {
     func toggleReminder(_ enabled: Bool) {
         reminderEnabled = enabled
         if enabled {
-            reminderService.start(intervalMinutes: workIntervalMinutes)
+            reminderService.start(configuration: rhythmConfiguration)
             statusText = "会按时提醒你"
         } else {
             reminderService.stop()
@@ -234,7 +241,7 @@ final class AppState: ObservableObject {
     func updateInterval(_ minutes: Int) {
         workIntervalMinutes = max(1, minutes)
         if reminderEnabled {
-            reminderService.start(intervalMinutes: workIntervalMinutes)
+            reminderService.start(configuration: rhythmConfiguration)
             statusText = "节奏已调整"
         }
         persistSettings()
@@ -247,9 +254,42 @@ final class AppState: ObservableObject {
         persistSettings()
     }
 
+    func updateRhythmMode(_ mode: RhythmMode) {
+        rhythmMode = mode
+        statusText = mode == .eyeCare ? "护眼节奏" : "番茄专注"
+        if reminderEnabled {
+            reminderService.start(configuration: rhythmConfiguration)
+        }
+        persistSettings()
+    }
+
+    func updatePomodoroFocus(_ minutes: Int) {
+        pomodoroFocusMinutes = max(1, minutes)
+        statusText = "专注时间已调整"
+        if reminderEnabled, rhythmMode == .pomodoro {
+            reminderService.start(configuration: rhythmConfiguration)
+        }
+        persistSettings()
+    }
+
+    func updatePomodoroBreak(_ minutes: Int) {
+        pomodoroBreakMinutes = max(1, minutes)
+        statusText = "番茄休息已调整"
+        persistSettings()
+    }
+
+    func updatePomodoroEyeBreakEnabled(_ enabled: Bool) {
+        pomodoroEyeBreakEnabled = enabled
+        statusText = enabled ? "番茄中启用舒眼" : "番茄中关闭舒眼"
+        if reminderEnabled, rhythmMode == .pomodoro {
+            reminderService.start(configuration: rhythmConfiguration)
+        }
+        persistSettings()
+    }
+
     func resetReminderTimer() {
         reminderEnabled = false
-        reminderService.reset(intervalMinutes: workIntervalMinutes)
+        reminderService.reset(configuration: rhythmConfiguration)
         statusText = "重新开始"
         persistSettings()
     }
@@ -406,7 +446,7 @@ final class AppState: ObservableObject {
     }
 
     func triggerTestReminderNow() {
-        startReminderFlow()
+        startReminderFlow(kind: rhythmMode == .pomodoro ? .pomodoro : .eye)
     }
 
     func triggerTestReminder(after seconds: Int) {
@@ -416,16 +456,17 @@ final class AppState: ObservableObject {
             guard let self else { return }
             Task { @MainActor in
                 guard self.reminderPhase == .none else { return }
-                self.startReminderFlow()
+                self.startReminderFlow(kind: self.rhythmMode == .pomodoro ? .pomodoro : .eye)
             }
         }
     }
 
     func completeBreak() {
         reminderEnabled = true
+        let completedBreakKind = activeBreakKind
         endReminderFlow()
-        statusText = AppCopy.Status.finished
-        reminderService.start(intervalMinutes: workIntervalMinutes)
+        statusText = completedBreakKind == .pomodoro ? AppCopy.Status.pomodoroFinished : AppCopy.Status.finished
+        reminderService.completeBreak()
         persistSettings()
     }
 
@@ -434,7 +475,7 @@ final class AppState: ObservableObject {
         reminderEnabled = true
         endReminderFlow()
         statusText = "先继续也可以"
-        reminderService.start(intervalMinutes: workIntervalMinutes)
+        reminderService.skipBreak()
         persistSettings()
     }
 
@@ -453,13 +494,26 @@ final class AppState: ObservableObject {
         NSApplication.shared.terminate(nil)
     }
 
-    private func startReminderFlow() {
+    private var rhythmConfiguration: RhythmConfiguration {
+        RhythmConfiguration(
+            mode: rhythmMode,
+            eyeIntervalMinutes: workIntervalMinutes,
+            eyeBreakDurationSeconds: breakDurationSeconds,
+            pomodoroFocusMinutes: pomodoroFocusMinutes,
+            pomodoroBreakMinutes: pomodoroBreakMinutes,
+            pomodoroEyeBreakEnabled: pomodoroEyeBreakEnabled,
+            mergeEyeBreakThresholdSeconds: mergeEyeBreakThresholdSeconds
+        )
+    }
+
+    private func startReminderFlow(kind: RhythmBreakKind) {
         guard reminderPhase == .none else { return }
         reminderService.stop()
+        activeBreakKind = kind
         // 先给用户 5 秒反应时间，再进入正式休息倒计时。
         reminderPhase = .preparing
         breakSecondsLeft = preparationSeconds
-        statusText = AppCopy.Status.preparing
+        statusText = kind == .pomodoro ? AppCopy.Status.pomodoroPreparing : AppCopy.Status.preparing
         NSApplication.shared.activate(ignoringOtherApps: true)
         reminderPanel?.show()
         startPreparationCountdown()
@@ -473,9 +527,11 @@ final class AppState: ObservableObject {
                 guard self.reminderPhase == .preparing else { return }
                 self.breakSecondsLeft -= 1
                 if self.breakSecondsLeft <= 0 {
-                    self.reminderPhase = .resting
-                    self.breakSecondsLeft = self.breakDurationSeconds
-                    self.statusText = AppCopy.Status.resting
+                    self.reminderPhase = self.activeBreakKind == .pomodoro ? .pomodoroResting : .resting
+                    self.breakSecondsLeft = self.activeBreakKind == .pomodoro ? self.pomodoroBreakMinutes * 60 : self.breakDurationSeconds
+                    self.statusText = self.activeBreakKind == .pomodoro
+                        ? AppCopy.Status.pomodoroResting
+                        : AppCopy.Status.resting
                     self.reminderPanel?.refresh()
                     self.breakCountdownTimer?.invalidate()
                     self.breakCountdownTimer = nil
@@ -496,13 +552,15 @@ final class AppState: ObservableObject {
         breakCountdownTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             guard let self else { return }
             Task { @MainActor in
-                guard self.reminderPhase == .resting else { return }
+                guard self.reminderPhase == .resting || self.reminderPhase == .pomodoroResting else { return }
                 self.breakSecondsLeft -= 1
                 if self.breakSecondsLeft <= 0 {
                     // 休息倒计时结束后不自动关闭浮窗，等待用户点击继续按钮。
                     self.reminderPhase = .completed
                     self.breakSecondsLeft = 0
-                    self.statusText = AppCopy.Status.completed
+                    self.statusText = self.activeBreakKind == .pomodoro
+                        ? AppCopy.Status.pomodoroCompleted
+                        : AppCopy.Status.completed
                     self.reminderPanel?.refresh()
                     if self.playBreakFinishedSound {
                         // 用户可能正在看远方，结束时可选用短促声音温柔提醒可以回来了。
@@ -524,6 +582,7 @@ final class AppState: ObservableObject {
     private func endReminderFlow() {
         reminderPhase = .none
         breakSecondsLeft = breakDurationSeconds
+        activeBreakKind = .eye
         breakCountdownTimer?.invalidate()
         breakCountdownTimer = nil
         reminderPanel?.hide()
@@ -536,8 +595,13 @@ final class AppState: ObservableObject {
     private func loadSettings() {
         let settings = settingsStore.load()
         reminderEnabled = settings.reminderEnabled
-        workIntervalMinutes = max(1, settings.workIntervalMinutes)
-        breakDurationSeconds = max(5, settings.breakDurationSeconds)
+        rhythmMode = RhythmMode.fromSettingsKey(settings.rhythmModeKey)
+        workIntervalMinutes = max(1, settings.eyeIntervalMinutes)
+        breakDurationSeconds = max(5, settings.eyeBreakDurationSeconds)
+        pomodoroFocusMinutes = max(1, settings.pomodoroFocusMinutes)
+        pomodoroBreakMinutes = max(1, settings.pomodoroBreakMinutes)
+        pomodoroEyeBreakEnabled = settings.pomodoroEyeBreakEnabled
+        mergeEyeBreakThresholdSeconds = max(0, settings.mergeEyeBreakThresholdSeconds)
         filterLevel = BlueLightLevel.fromSettingsKey(settings.filterLevelKey)
         useBackgroundImage = settings.useBackgroundImage
         playBreakFinishedSound = settings.playBreakFinishedSound
@@ -572,8 +636,15 @@ final class AppState: ObservableObject {
     private func persistSettings() {
         let settings = AppSettings(
             reminderEnabled: reminderEnabled,
+            rhythmModeKey: rhythmMode.settingsKey,
             workIntervalMinutes: workIntervalMinutes,
             breakDurationSeconds: breakDurationSeconds,
+            eyeIntervalMinutes: workIntervalMinutes,
+            eyeBreakDurationSeconds: breakDurationSeconds,
+            pomodoroFocusMinutes: pomodoroFocusMinutes,
+            pomodoroBreakMinutes: pomodoroBreakMinutes,
+            pomodoroEyeBreakEnabled: pomodoroEyeBreakEnabled,
+            mergeEyeBreakThresholdSeconds: mergeEyeBreakThresholdSeconds,
             filterLevelKey: filterLevel.settingsKey,
             useBackgroundImage: useBackgroundImage,
             playBreakFinishedSound: playBreakFinishedSound,

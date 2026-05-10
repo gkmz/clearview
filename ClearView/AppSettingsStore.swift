@@ -5,6 +5,31 @@ struct ShortcutBinding: Codable, Equatable {
     var modifierFlagsRaw: UInt
 }
 
+enum RhythmMode: String, CaseIterable, Codable, Equatable {
+    case eyeCare
+    case pomodoro
+
+    var title: String {
+        switch self {
+        case .eyeCare: return "护眼"
+        case .pomodoro: return "番茄"
+        }
+    }
+
+    var statusTitle: String {
+        switch self {
+        case .eyeCare: return "护眼节奏"
+        case .pomodoro: return "番茄专注"
+        }
+    }
+
+    static func fromSettingsKey(_ key: String) -> RhythmMode {
+        RhythmMode(rawValue: key) ?? .eyeCare
+    }
+
+    var settingsKey: String { rawValue }
+}
+
 /// 提醒弹窗醒目程度：轻度更克制、重度更抢眼，默认中度兼顾多数用户。
 enum ReminderIntensityLevel: String, CaseIterable, Codable, Equatable {
     case light
@@ -206,8 +231,15 @@ enum ShortcutAction: String, CaseIterable, Codable {
 
 struct AppSettings: Codable {
     var reminderEnabled: Bool
+    var rhythmModeKey: String
     var workIntervalMinutes: Int
     var breakDurationSeconds: Int
+    var eyeIntervalMinutes: Int
+    var eyeBreakDurationSeconds: Int
+    var pomodoroFocusMinutes: Int
+    var pomodoroBreakMinutes: Int
+    var pomodoroEyeBreakEnabled: Bool
+    var mergeEyeBreakThresholdSeconds: Int
     var filterLevelKey: String
     var useBackgroundImage: Bool
     var playBreakFinishedSound: Bool
@@ -231,8 +263,15 @@ struct AppSettings: Codable {
 
     static let `default` = AppSettings(
         reminderEnabled: true,
+        rhythmModeKey: RhythmMode.eyeCare.settingsKey,
         workIntervalMinutes: 20,
         breakDurationSeconds: 20,
+        eyeIntervalMinutes: 20,
+        eyeBreakDurationSeconds: 20,
+        pomodoroFocusMinutes: 25,
+        pomodoroBreakMinutes: 5,
+        pomodoroEyeBreakEnabled: true,
+        mergeEyeBreakThresholdSeconds: 120,
         filterLevelKey: "off",
         useBackgroundImage: true,
         playBreakFinishedSound: false,
@@ -255,8 +294,15 @@ struct AppSettings: Codable {
 
     enum CodingKeys: String, CodingKey {
         case reminderEnabled
+        case rhythmModeKey
         case workIntervalMinutes
         case breakDurationSeconds
+        case eyeIntervalMinutes
+        case eyeBreakDurationSeconds
+        case pomodoroFocusMinutes
+        case pomodoroBreakMinutes
+        case pomodoroEyeBreakEnabled
+        case mergeEyeBreakThresholdSeconds
         case filterLevelKey
         case useBackgroundImage
         case playBreakFinishedSound
@@ -279,8 +325,15 @@ struct AppSettings: Codable {
 
     init(
         reminderEnabled: Bool,
+        rhythmModeKey: String,
         workIntervalMinutes: Int,
         breakDurationSeconds: Int,
+        eyeIntervalMinutes: Int,
+        eyeBreakDurationSeconds: Int,
+        pomodoroFocusMinutes: Int,
+        pomodoroBreakMinutes: Int,
+        pomodoroEyeBreakEnabled: Bool,
+        mergeEyeBreakThresholdSeconds: Int,
         filterLevelKey: String,
         useBackgroundImage: Bool,
         playBreakFinishedSound: Bool,
@@ -301,8 +354,15 @@ struct AppSettings: Codable {
         reminderIntensityKey: String
     ) {
         self.reminderEnabled = reminderEnabled
+        self.rhythmModeKey = rhythmModeKey
         self.workIntervalMinutes = workIntervalMinutes
         self.breakDurationSeconds = breakDurationSeconds
+        self.eyeIntervalMinutes = eyeIntervalMinutes
+        self.eyeBreakDurationSeconds = eyeBreakDurationSeconds
+        self.pomodoroFocusMinutes = pomodoroFocusMinutes
+        self.pomodoroBreakMinutes = pomodoroBreakMinutes
+        self.pomodoroEyeBreakEnabled = pomodoroEyeBreakEnabled
+        self.mergeEyeBreakThresholdSeconds = mergeEyeBreakThresholdSeconds
         self.filterLevelKey = filterLevelKey
         self.useBackgroundImage = useBackgroundImage
         self.playBreakFinishedSound = playBreakFinishedSound
@@ -327,8 +387,17 @@ struct AppSettings: Codable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let defaults = AppSettings.default
         reminderEnabled = try container.decodeIfPresent(Bool.self, forKey: .reminderEnabled) ?? defaults.reminderEnabled
-        workIntervalMinutes = try container.decodeIfPresent(Int.self, forKey: .workIntervalMinutes) ?? defaults.workIntervalMinutes
-        breakDurationSeconds = try container.decodeIfPresent(Int.self, forKey: .breakDurationSeconds) ?? defaults.breakDurationSeconds
+        rhythmModeKey = try container.decodeIfPresent(String.self, forKey: .rhythmModeKey) ?? defaults.rhythmModeKey
+        let legacyWorkIntervalMinutes = try container.decodeIfPresent(Int.self, forKey: .workIntervalMinutes) ?? defaults.workIntervalMinutes
+        let legacyBreakDurationSeconds = try container.decodeIfPresent(Int.self, forKey: .breakDurationSeconds) ?? defaults.breakDurationSeconds
+        workIntervalMinutes = legacyWorkIntervalMinutes
+        breakDurationSeconds = legacyBreakDurationSeconds
+        eyeIntervalMinutes = try container.decodeIfPresent(Int.self, forKey: .eyeIntervalMinutes) ?? legacyWorkIntervalMinutes
+        eyeBreakDurationSeconds = try container.decodeIfPresent(Int.self, forKey: .eyeBreakDurationSeconds) ?? legacyBreakDurationSeconds
+        pomodoroFocusMinutes = try container.decodeIfPresent(Int.self, forKey: .pomodoroFocusMinutes) ?? defaults.pomodoroFocusMinutes
+        pomodoroBreakMinutes = try container.decodeIfPresent(Int.self, forKey: .pomodoroBreakMinutes) ?? defaults.pomodoroBreakMinutes
+        pomodoroEyeBreakEnabled = try container.decodeIfPresent(Bool.self, forKey: .pomodoroEyeBreakEnabled) ?? defaults.pomodoroEyeBreakEnabled
+        mergeEyeBreakThresholdSeconds = try container.decodeIfPresent(Int.self, forKey: .mergeEyeBreakThresholdSeconds) ?? defaults.mergeEyeBreakThresholdSeconds
         filterLevelKey = try container.decodeIfPresent(String.self, forKey: .filterLevelKey) ?? defaults.filterLevelKey
         useBackgroundImage = try container.decodeIfPresent(Bool.self, forKey: .useBackgroundImage) ?? defaults.useBackgroundImage
         playBreakFinishedSound = try container.decodeIfPresent(Bool.self, forKey: .playBreakFinishedSound) ?? defaults.playBreakFinishedSound

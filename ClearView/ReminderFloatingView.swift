@@ -101,7 +101,13 @@ struct ReminderFloatingView: View {
     private var titleView: some View {
         switch appState.reminderPhase {
         case .preparing:
-            titleTextView(AppCopy.ReminderPopup.preparingTitle)
+            titleTextView(
+                appState.activeBreakKind == .pomodoro
+                    ? AppCopy.ReminderPopup.pomodoroPreparingTitle
+                    : AppCopy.ReminderPopup.preparingTitle
+            )
+        case .pomodoroResting:
+            titleTextView(AppCopy.ReminderPopup.pomodoroRestingTitle)
         case .completed:
             titleTextView(AppCopy.ReminderPopup.completedTitle)
         default:
@@ -117,9 +123,15 @@ struct ReminderFloatingView: View {
     private var messageText: String {
         switch appState.reminderPhase {
         case .preparing:
-            return AppCopy.ReminderPopup.preparingMessage
+            return appState.activeBreakKind == .pomodoro
+                ? AppCopy.ReminderPopup.pomodoroPreparingMessage
+                : AppCopy.ReminderPopup.preparingMessage
+        case .pomodoroResting:
+            return AppCopy.ReminderPopup.pomodoroRestingMessage
         case .completed:
-            return AppCopy.ReminderPopup.completedMessage
+            return appState.activeBreakKind == .pomodoro
+                ? AppCopy.ReminderPopup.pomodoroCompletedMessage
+                : AppCopy.ReminderPopup.completedMessage
         default:
             return AppCopy.ReminderPopup.restingMessage
         }
@@ -177,7 +189,9 @@ struct ReminderFloatingView: View {
         case "clock.arrow.circlepath":
             return AppCopy.ReminderPopup.snoozeHelp
         case "play.fill":
-            return AppCopy.ReminderPopup.doneHelp
+            return appState.activeBreakKind == .pomodoro
+                ? AppCopy.ReminderPopup.pomodoroDoneHelp
+                : AppCopy.ReminderPopup.doneHelp
         default:
             return "操作"
         }

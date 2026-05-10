@@ -201,8 +201,10 @@ private struct SettingsPanelView: View {
     private var settingsSectionsContent: some View {
         VStack(alignment: .leading, spacing: 10) {
             settingsSection(title: "节奏", isExpanded: $isRhythmSettingsExpanded) {
+                rhythmModeRow()
+
                 presetRow(
-                    title: "多久提醒",
+                    title: "护眼间隔",
                     values: [20, 25, 45, 60],
                     unit: "分钟",
                     selected: appState.workIntervalMinutes
@@ -214,6 +216,30 @@ private struct SettingsPanelView: View {
                     unit: "秒",
                     selected: appState.breakDurationSeconds
                 ) { appState.updateBreakDuration($0) }
+
+                if appState.rhythmMode == .pomodoro {
+                    presetRow(
+                        title: "专注多久",
+                        values: [25, 45, 50, 60],
+                        unit: "分钟",
+                        selected: appState.pomodoroFocusMinutes
+                    ) { appState.updatePomodoroFocus($0) }
+
+                    presetRow(
+                        title: "番茄休息",
+                        values: [5, 10, 15, 20],
+                        unit: "分钟",
+                        selected: appState.pomodoroBreakMinutes
+                    ) { appState.updatePomodoroBreak($0) }
+
+                    settingToggleCard(
+                        title: "番茄中舒眼",
+                        isOn: Binding(
+                            get: { appState.pomodoroEyeBreakEnabled },
+                            set: { appState.updatePomodoroEyeBreakEnabled($0) }
+                        )
+                    )
+                }
             }
 
             settingsSection(title: "外观", isExpanded: $isAppearanceSettingsExpanded) {
@@ -379,6 +405,48 @@ private struct SettingsPanelView: View {
                     .buttonStyle(.plain)
                     .focusable(false)
                     .hoverTooltip(level.title)
+                }
+            }
+        }
+    }
+
+    private func rhythmModeRow() -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("节奏模式")
+                    .font(.caption)
+                    .foregroundStyle(textPrimary)
+                Spacer()
+                Text(appState.rhythmMode.title)
+                    .font(.caption)
+                    .foregroundStyle(textSecondary.opacity(0.92))
+            }
+
+            HStack(spacing: 8) {
+                ForEach(RhythmMode.allCases, id: \.self) { mode in
+                    let isSelected = appState.rhythmMode == mode
+                    Button {
+                        appState.updateRhythmMode(mode)
+                    } label: {
+                        Text(mode.title)
+                            .font(.caption.weight(isSelected ? .bold : .semibold))
+                            .frame(width: 76, height: 28)
+                            .foregroundStyle(isSelected ? Color.white : textPrimary)
+                            .background(isSelected ? Color.white.opacity(isDark ? 0.34 : 0.30) : Color.clear)
+                            .modifier(
+                                SettingsGlassButtonModifier(
+                                    cornerRadius: 14,
+                                    intensity: isSelected ? 0.60 : 1.0,
+                                    tint: buttonTint,
+                                    border: isSelected ? Color.white.opacity(0.50) : buttonBorder
+                                )
+                            )
+                            .scaleEffect(isSelected ? 1.04 : 1.0)
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .focusable(false)
+                    .hoverTooltip(mode.statusTitle)
                 }
             }
         }

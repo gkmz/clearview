@@ -41,6 +41,7 @@ ClearView is a very minimalist macOS app that helps users maintain healthier scr
 - Menu bar based workflow with an independent main panel.
 - Reminder lifecycle: work timer → preparation countdown → break countdown → completion.
 - Reminder actions: complete now, snooze, and restart timing.
+- Eye-care and Pomodoro rhythms: Pomodoro mode can include eye-care micro-breaks during focus and merge nearby eye-care prompts into the Pomodoro break.
 - Blue-light filter presets: `Off`, `Light`, `Medium`, `Night`.
 - Multiple customizable global shortcuts.
 - Local-only settings persistence via `UserDefaults`.
@@ -82,6 +83,12 @@ Do not disable Gatekeeper globally. Only allow this app if you trust the downloa
 
 ### Start Using ClearView
 After launch, `ClearView` appears in the macOS menu bar. Click the menu bar icon to open the main panel, adjust reminder timing, switch blue-light filter presets, and open settings.
+
+In rhythm settings, choose:
+- **Eye Care**: remind yourself to look away from the screen on a fixed interval.
+- **Pomodoro**: run focus/rest cycles, with optional eye-care micro-breaks during focus.
+
+In Pomodoro mode, if an eye-care reminder is close to the Pomodoro break, ClearView merges it into the start of the Pomodoro break instead of showing back-to-back “20-second eye break + 5-minute rest” interruptions.
 
 ### Default Shortcuts
 The default shortcuts are listed below and can be changed in settings:
