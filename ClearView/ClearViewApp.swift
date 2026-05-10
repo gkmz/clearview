@@ -425,11 +425,12 @@ final class AppState: ObservableObject {
     }
 
     func updateReminderIntensity(_ level: ReminderIntensityLevel) {
+        let oldLevel = reminderIntensity
         reminderIntensity = level
         statusText = "提醒方式：\(level.shortTitle)"
         persistSettings()
-        // 关键流程：弹窗已展示时立即重算窗口几何，避免用户改设置后仍看到旧尺寸。
-        reminderPanel?.syncReminderPanelGeometryIfVisible()
+        // 提醒方式切换可能在横幅与大浮窗之间变化，需按新方式重新定位，避免从右上角放大后超出屏幕。
+        reminderPanel?.syncReminderPanelGeometryIfVisible(reposition: oldLevel != level)
     }
 
     func updateSettingsWindowOpacity(_ value: Double) {
@@ -779,9 +780,9 @@ final class ReminderPanelController {
     }
 
     /// 关键流程：设置里切换提醒强度且弹窗正在显示时，同步窗口尺寸与圆角，避免只改内部视图而外框不变。
-    func syncReminderPanelGeometryIfVisible() {
+    func syncReminderPanelGeometryIfVisible(reposition: Bool = false) {
         guard let appState, appState.reminderPhase != .none else { return }
-        refresh(reposition: false)
+        refresh(reposition: reposition)
     }
 
     func refresh(reposition: Bool = false) {
@@ -839,9 +840,9 @@ final class ReminderPanelController {
         let width = size.width
         let height = size.height
         let x = appState.reminderIntensity == .light
-            ? visibleFrame.maxX - width - 28
+            ? visibleFrame.maxX - width - 24
             : visibleFrame.midX - width / 2
-        let y = visibleFrame.maxY - height - (appState.reminderIntensity == .light ? 28 : 90)
+        let y = visibleFrame.maxY - height - (appState.reminderIntensity == .light ? 24 : 90)
         panel.setFrame(NSRect(x: x, y: y, width: width, height: height), display: true)
     }
 

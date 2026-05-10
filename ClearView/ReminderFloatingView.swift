@@ -38,11 +38,11 @@ struct ReminderFloatingView: View {
     }
 
     private var bannerContent: some View {
-        HStack(spacing: 12) {
-            StableText("\(appState.breakSecondsLeft)", size: 30, weight: .bold, alpha: 0.94, usesMonospacedDigit: true)
-                .frame(width: 54, height: 42)
+        HStack(spacing: 10) {
+            StableText("\(appState.breakSecondsLeft)", size: 24, weight: .bold, alpha: 0.94, usesMonospacedDigit: true)
+                .frame(width: 46, height: 34)
 
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 2) {
                 titleView
                 Text(messageText)
                     .font(.system(size: 12, weight: .medium))
@@ -58,7 +58,7 @@ struct ReminderFloatingView: View {
                 Text("稍后")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(textPrimary)
-                    .frame(width: 44, height: 28)
+                    .frame(width: 42, height: 26)
                     .background(buttonFill)
                     .clipShape(Capsule())
             }
@@ -73,14 +73,14 @@ struct ReminderFloatingView: View {
                 Image(systemName: appState.isReminderPreview ? "xmark" : "checkmark")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(textPrimary)
-                    .frame(width: 30, height: 30)
+                    .frame(width: 28, height: 28)
                     .background(buttonFill.opacity(1.15))
                     .clipShape(Circle())
             }
             .buttonStyle(.plain)
             .focusable(false)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 14)
         .id(appState.reminderPhase)
         .transaction { transaction in
             transaction.animation = nil

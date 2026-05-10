@@ -74,7 +74,7 @@ enum ReminderIntensityLevel: String, CaseIterable, Codable, Equatable {
 
     var panelHeight: CGFloat {
         switch self {
-        case .light: return 96
+        case .light: return 72
         case .medium: return 300
         case .strong: return 340
         }
@@ -82,7 +82,7 @@ enum ReminderIntensityLevel: String, CaseIterable, Codable, Equatable {
 
     var cornerRadius: CGFloat {
         switch self {
-        case .light: return 18
+        case .light: return 14
         case .medium: return 20
         case .strong: return 24
         }
