@@ -83,12 +83,15 @@ final class AppState: ObservableObject {
     @Published var reminderPhase: ReminderPhase = .none
     @Published var breakSecondsLeft: Int = 20
     @Published var activeBreakKind: RhythmBreakKind = .eye
+    @Published var isReminderPreview = false
 
     let reminderService = ReminderService()
     let blueLightService = BlueLightFilterService()
     private let shortcutManager = GlobalShortcutManager.shared
     private let settingsStore = AppSettingsStore()
     private let preparationSeconds = 5
+    private let previewSeconds = 20
+    private var reminderEnabledBeforePreview = true
     private var breakCountdownTimer: Timer?
     private var mainPanel: MainPanelController?
     private var reminderPanel: ReminderPanelController?
@@ -255,8 +258,9 @@ final class AppState: ObservableObject {
     }
 
     func updateRhythmMode(_ mode: RhythmMode) {
+        guard rhythmMode != mode else { return }
         rhythmMode = mode
-        statusText = mode == .eyeCare ? "护眼节奏" : "番茄专注"
+        statusText = mode == .eyeCare ? "已切换到护眼，重新开始倒计时" : "已切换到番茄，开始新一轮专注"
         if reminderEnabled {
             reminderService.start(configuration: rhythmConfiguration)
         }
@@ -446,22 +450,27 @@ final class AppState: ObservableObject {
     }
 
     func triggerTestReminderNow() {
-        startReminderFlow(kind: rhythmMode == .pomodoro ? .pomodoro : .eye)
+        startReminderPreview()
     }
 
     func triggerTestReminder(after seconds: Int) {
         let safeSeconds = max(1, seconds)
-        statusText = "\(safeSeconds)秒后提醒你"
+        statusText = "\(safeSeconds)秒后预览提醒"
         DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(safeSeconds)) { [weak self] in
             guard let self else { return }
             Task { @MainActor in
                 guard self.reminderPhase == .none else { return }
-                self.startReminderFlow(kind: self.rhythmMode == .pomodoro ? .pomodoro : .eye)
+                self.startReminderPreview()
             }
         }
     }
 
     func completeBreak() {
+        if isReminderPreview {
+            closeReminderPreview()
+            return
+        }
+
         reminderEnabled = true
         let completedBreakKind = activeBreakKind
         endReminderFlow()
@@ -480,6 +489,10 @@ final class AppState: ObservableObject {
     }
 
     func snoozeBreak(minutes: Int = 5) {
+        guard !isReminderPreview else {
+            closeReminderPreview()
+            return
+        }
         // 关键流程：延迟提醒会恢复主倒计时，需同步开启 reminderEnabled，避免主界面仍显示“开始”按钮。
         reminderEnabled = true
         endReminderFlow()
@@ -492,6 +505,30 @@ final class AppState: ObservableObject {
         // 退出前恢复显示色彩，避免蓝光过滤状态残留。
         blueLightService.apply(level: .off)
         NSApplication.shared.terminate(nil)
+    }
+
+    private func startReminderPreview() {
+        guard reminderPhase == .none else { return }
+        reminderEnabledBeforePreview = reminderEnabled
+        reminderService.stop()
+        isReminderPreview = true
+        activeBreakKind = .eye
+        reminderPhase = .resting
+        breakSecondsLeft = previewSeconds
+        statusText = "预览提醒"
+        NSApplication.shared.activate(ignoringOtherApps: true)
+        reminderPanel?.show()
+        startPreviewCountdown()
+    }
+
+    private func closeReminderPreview() {
+        let shouldResume = reminderEnabledBeforePreview
+        endReminderFlow()
+        isReminderPreview = false
+        statusText = shouldResume ? "继续当前节奏" : "预览已关闭"
+        if shouldResume {
+            reminderService.start(configuration: rhythmConfiguration)
+        }
     }
 
     private var rhythmConfiguration: RhythmConfiguration {
@@ -579,10 +616,35 @@ final class AppState: ObservableObject {
         }
     }
 
+    private func startPreviewCountdown() {
+        breakCountdownTimer?.invalidate()
+        breakCountdownTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+            guard let self else { return }
+            Task { @MainActor in
+                guard self.isReminderPreview else { return }
+                self.breakSecondsLeft -= 1
+                if self.breakSecondsLeft <= 0 {
+                    self.reminderPhase = .completed
+                    self.breakSecondsLeft = 0
+                    self.statusText = "预览结束"
+                    self.reminderPanel?.refresh()
+                    self.breakCountdownTimer?.invalidate()
+                    self.breakCountdownTimer = nil
+                } else {
+                    self.reminderPanel?.refresh()
+                }
+            }
+        }
+        if let timer = breakCountdownTimer {
+            RunLoop.main.add(timer, forMode: .common)
+        }
+    }
+
     private func endReminderFlow() {
         reminderPhase = .none
         breakSecondsLeft = breakDurationSeconds
         activeBreakKind = .eye
+        isReminderPreview = false
         breakCountdownTimer?.invalidate()
         breakCountdownTimer = nil
         reminderPanel?.hide()
@@ -707,8 +769,8 @@ final class ReminderPanelController {
             newPanel.isReleasedWhenClosed = false
             panel = newPanel
         }
-        // 关键流程：无论新建或复用面板，统一走 refresh 以同步强度对应的尺寸与圆角。
-        refresh()
+        // 首次展示一轮提醒时回到默认位置；后续倒计时刷新不应覆盖用户拖动后的位置。
+        refresh(reposition: true)
         // 用较高层级的独立面板前置，避免被 MenuBarExtra 菜单窗口吞掉。
         panel?.orderFrontRegardless()
         panel?.makeKey()
@@ -717,17 +779,21 @@ final class ReminderPanelController {
     /// 关键流程：设置里切换提醒强度且弹窗正在显示时，同步窗口尺寸与圆角，避免只改内部视图而外框不变。
     func syncReminderPanelGeometryIfVisible() {
         guard let appState, appState.reminderPhase != .none else { return }
-        refresh()
+        refresh(reposition: false)
     }
 
-    func refresh() {
+    func refresh(reposition: Bool = false) {
         guard let appState, let panel else { return }
         let size = Self.panelSize(for: appState)
         // 透明 NSPanel 复用同一个 SwiftUI 图层时，阶段切换可能留下上一帧残影。
         // 这里直接重建 HostingView，让 AppKit 清空透明缓冲区后再绘制当前状态。
         panel.contentView = makeHostingView(appState: appState, size: size)
         applyPanelCornerMask()
-        positionAtTopCenter()
+        if reposition {
+            positionAtTopCenter()
+        } else {
+            resizePreservingCenter(size)
+        }
         panel.contentView?.needsDisplay = true
         panel.displayIfNeeded()
         panel.invalidateShadow()
@@ -774,6 +840,14 @@ final class ReminderPanelController {
         // 放大后的提示窗仍保持顶部居中，并留出呼吸空间避免贴近菜单栏。
         let y = visibleFrame.maxY - height - 90
         panel.setFrame(NSRect(x: x, y: y, width: width, height: height), display: true)
+    }
+
+    private func resizePreservingCenter(_ size: NSSize) {
+        guard let panel else { return }
+        let current = panel.frame
+        let x = current.midX - size.width / 2
+        let y = current.midY - size.height / 2
+        panel.setFrame(NSRect(x: x, y: y, width: size.width, height: size.height), display: true)
     }
 
     private func applyPanelCornerMask() {

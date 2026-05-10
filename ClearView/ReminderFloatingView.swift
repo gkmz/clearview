@@ -38,14 +38,17 @@ struct ReminderFloatingView: View {
                 .padding(.top, -2)
 
                 HStack(spacing: intensity.actionHStackSpacing) {
-                    if appState.reminderPhase != .completed {
+                    if appState.reminderPhase != .completed && !appState.isReminderPreview {
                         floatingIconButton(systemName: "clock.arrow.circlepath") {
                             appState.snoozeBreak(minutes: 5)
                         }
                     }
 
                     // 休息倒计时结束前不允许直接继续，避免用户习惯性忽略提醒。
-                    floatingIconButton(systemName: "play.fill", isDisabled: appState.reminderPhase != .completed) {
+                    floatingIconButton(
+                        systemName: appState.isReminderPreview ? "xmark" : "play.fill",
+                        isDisabled: !appState.isReminderPreview && appState.reminderPhase != .completed
+                    ) {
                         appState.completeBreak()
                     }
                 }
@@ -109,9 +112,9 @@ struct ReminderFloatingView: View {
         case .pomodoroResting:
             titleTextView(AppCopy.ReminderPopup.pomodoroRestingTitle)
         case .completed:
-            titleTextView(AppCopy.ReminderPopup.completedTitle)
+            titleTextView(appState.isReminderPreview ? "预览结束" : AppCopy.ReminderPopup.completedTitle)
         default:
-            titleTextView(AppCopy.ReminderPopup.restingTitle)
+            titleTextView(appState.isReminderPreview ? "提醒预览" : AppCopy.ReminderPopup.restingTitle)
         }
     }
 
@@ -129,10 +132,16 @@ struct ReminderFloatingView: View {
         case .pomodoroResting:
             return AppCopy.ReminderPopup.pomodoroRestingMessage
         case .completed:
+            if appState.isReminderPreview {
+                return "预览不会改变当前节奏。"
+            }
             return appState.activeBreakKind == .pomodoro
                 ? AppCopy.ReminderPopup.pomodoroCompletedMessage
                 : AppCopy.ReminderPopup.completedMessage
         default:
+            if appState.isReminderPreview {
+                return "这是 20 秒提示窗预览，可随时关闭。"
+            }
             return AppCopy.ReminderPopup.restingMessage
         }
     }
@@ -188,6 +197,8 @@ struct ReminderFloatingView: View {
         switch systemName {
         case "clock.arrow.circlepath":
             return AppCopy.ReminderPopup.snoozeHelp
+        case "xmark":
+            return "关闭预览"
         case "play.fill":
             return appState.activeBreakKind == .pomodoro
                 ? AppCopy.ReminderPopup.pomodoroDoneHelp
