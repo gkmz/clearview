@@ -288,9 +288,6 @@ private struct SettingsPanelView: View {
                     range: appState.useBackgroundImage ? 0.0...1.0 : 0.20...1.0
                 )
 
-                // 关键流程：轻/中/重控制提醒面板尺寸与字号，对应不同「需要被提醒」的程度。
-                reminderIntensityRow()
-
                 opacitySettingRow(
                     title: "提示窗透明度",
                     value: Binding(
@@ -318,6 +315,8 @@ private struct SettingsPanelView: View {
                         )
                     )
                 }
+
+                reminderIntensityRow()
 
                 shortcutSettingCard
             }
@@ -384,7 +383,7 @@ private struct SettingsPanelView: View {
     private func reminderIntensityRow() -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .top) {
-                Text("提醒强度")
+                Text("提醒方式")
                     .font(.caption)
                     .foregroundStyle(textPrimary)
                 Spacer()
@@ -420,7 +419,7 @@ private struct SettingsPanelView: View {
                     }
                     .buttonStyle(.plain)
                     .focusable(false)
-                    .hoverTooltip(level.title)
+                    .hoverTooltip(level.summary)
                 }
             }
         }

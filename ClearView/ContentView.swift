@@ -498,9 +498,6 @@ struct ContentView: View {
                     range: appState.useBackgroundImage ? 0.0...1.0 : 0.20...1.0
                 )
 
-                // 关键流程：与独立设置面板一致，主界面内嵌设置也提供提醒强度切换。
-                reminderIntensityRow()
-
                 opacitySettingRow(
                     title: "提示窗透明度",
                     value: Binding(
@@ -520,6 +517,8 @@ struct ContentView: View {
                         )
                     )
                 }
+
+                reminderIntensityRow()
 
                 shortcutSettingCard
             }
@@ -779,7 +778,7 @@ struct ContentView: View {
     private func reminderIntensityRow() -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .top) {
-                Text("提醒强度")
+                Text("提醒方式")
                     .font(.caption)
                     .foregroundStyle(textPrimary)
                 Spacer()
@@ -815,7 +814,7 @@ struct ContentView: View {
                     }
                     .buttonStyle(.plain)
                     .focusable(false)
-                    .hoverTooltip(level.title)
+                    .hoverTooltip(level.summary)
                 }
             }
         }

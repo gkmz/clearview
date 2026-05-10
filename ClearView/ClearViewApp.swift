@@ -426,7 +426,7 @@ final class AppState: ObservableObject {
 
     func updateReminderIntensity(_ level: ReminderIntensityLevel) {
         reminderIntensity = level
-        statusText = "提醒强度：\(level.shortTitle)"
+        statusText = "提醒方式：\(level.shortTitle)"
         persistSettings()
         // 关键流程：弹窗已展示时立即重算窗口几何，避免用户改设置后仍看到旧尺寸。
         reminderPanel?.syncReminderPanelGeometryIfVisible()
@@ -516,7 +516,9 @@ final class AppState: ObservableObject {
         reminderPhase = .resting
         breakSecondsLeft = previewSeconds
         statusText = "预览提醒"
-        NSApplication.shared.activate(ignoringOtherApps: true)
+        if reminderIntensity != .light {
+            NSApplication.shared.activate(ignoringOtherApps: true)
+        }
         reminderPanel?.show()
         startPreviewCountdown()
     }
@@ -836,9 +838,10 @@ final class ReminderPanelController {
         guard let visibleFrame = screen?.visibleFrame else { return }
         let width = size.width
         let height = size.height
-        let x = visibleFrame.midX - width / 2
-        // 放大后的提示窗仍保持顶部居中，并留出呼吸空间避免贴近菜单栏。
-        let y = visibleFrame.maxY - height - 90
+        let x = appState.reminderIntensity == .light
+            ? visibleFrame.maxX - width - 28
+            : visibleFrame.midX - width / 2
+        let y = visibleFrame.maxY - height - (appState.reminderIntensity == .light ? 28 : 90)
         panel.setFrame(NSRect(x: x, y: y, width: width, height: height), display: true)
     }
 

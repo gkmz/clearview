@@ -24,49 +24,106 @@ struct ReminderFloatingView: View {
         ZStack {
             panelBackground
 
-            VStack(spacing: intensity.vStackSpacing) {
-                titleView
-
-                StableText(
-                    "\(appState.breakSecondsLeft)",
-                    size: intensity.countdownFontSize,
-                    weight: .bold,
-                    alpha: 0.94,
-                    usesMonospacedDigit: true
-                )
-                .frame(height: intensity.countdownFrameHeight)
-                .padding(.top, -2)
-
-                HStack(spacing: intensity.actionHStackSpacing) {
-                    if appState.reminderPhase != .completed && !appState.isReminderPreview {
-                        floatingIconButton(systemName: "clock.arrow.circlepath") {
-                            appState.snoozeBreak(minutes: 5)
-                        }
-                    }
-
-                    // 休息倒计时结束前不允许直接继续，避免用户习惯性忽略提醒。
-                    floatingIconButton(
-                        systemName: appState.isReminderPreview ? "xmark" : "play.fill",
-                        isDisabled: !appState.isReminderPreview && appState.reminderPhase != .completed
-                    ) {
-                        appState.completeBreak()
-                    }
-                }
-                .padding(.top, 4)
-
-                StableText(messageText, size: intensity.messageFontSize, weight: .medium, alpha: 0.78)
-                    .frame(height: intensity.messageFrameHeight)
-                    .padding(.top, 2)
-            }
-            .padding(.horizontal, intensity.horizontalPadding)
-            .padding(.vertical, intensity.verticalPadding)
-            .id(appState.reminderPhase)
-            .transaction { transaction in
-                transaction.animation = nil
+            if intensity == .light {
+                bannerContent
+            } else {
+                floatingContent
             }
         }
         .frame(width: intensity.panelWidth, height: intensity.panelHeight)
         .shadow(color: .black.opacity(isDark ? 0.30 : 0.20), radius: intensity.shadowRadius, x: 0, y: 18)
+        .transaction { transaction in
+            transaction.animation = nil
+        }
+    }
+
+    private var bannerContent: some View {
+        HStack(spacing: 12) {
+            StableText("\(appState.breakSecondsLeft)", size: 30, weight: .bold, alpha: 0.94, usesMonospacedDigit: true)
+                .frame(width: 54, height: 42)
+
+            VStack(alignment: .leading, spacing: 3) {
+                titleView
+                Text(messageText)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(textSecondary)
+                    .lineLimit(1)
+            }
+
+            Spacer()
+
+            Button {
+                appState.snoozeBreak(minutes: 5)
+            } label: {
+                Text("稍后")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(textPrimary)
+                    .frame(width: 44, height: 28)
+                    .background(buttonFill)
+                    .clipShape(Capsule())
+            }
+            .buttonStyle(.plain)
+            .focusable(false)
+            .opacity(appState.isReminderPreview || appState.reminderPhase == .completed ? 0 : 1)
+            .disabled(appState.isReminderPreview || appState.reminderPhase == .completed)
+
+            Button {
+                appState.completeBreak()
+            } label: {
+                Image(systemName: appState.isReminderPreview ? "xmark" : "checkmark")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(textPrimary)
+                    .frame(width: 30, height: 30)
+                    .background(buttonFill.opacity(1.15))
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .focusable(false)
+        }
+        .padding(.horizontal, 16)
+        .id(appState.reminderPhase)
+        .transaction { transaction in
+            transaction.animation = nil
+        }
+    }
+
+    private var floatingContent: some View {
+        VStack(spacing: intensity.vStackSpacing) {
+            titleView
+
+            StableText(
+                "\(appState.breakSecondsLeft)",
+                size: intensity.countdownFontSize,
+                weight: .bold,
+                alpha: 0.94,
+                usesMonospacedDigit: true
+            )
+            .frame(height: intensity.countdownFrameHeight)
+            .padding(.top, -2)
+
+            HStack(spacing: intensity.actionHStackSpacing) {
+                if shouldShowSnoozeButton {
+                    floatingIconButton(systemName: "clock.arrow.circlepath") {
+                        appState.snoozeBreak(minutes: 5)
+                    }
+                }
+
+                floatingIconButton(
+                    systemName: appState.isReminderPreview ? "xmark" : "play.fill",
+                    isDisabled: !appState.isReminderPreview && appState.reminderPhase != .completed
+                ) {
+                    appState.completeBreak()
+                }
+            }
+            .padding(.top, 4)
+
+            StableText(messageText, size: intensity.messageFontSize, weight: .medium, alpha: 0.78)
+                .frame(height: intensity.messageFrameHeight)
+                .padding(.top, 2)
+        }
+        .padding(.horizontal, intensity.horizontalPadding)
+        .padding(.vertical, intensity.verticalPadding)
+        .id(appState.reminderPhase)
         .transaction { transaction in
             transaction.animation = nil
         }
@@ -191,6 +248,12 @@ struct ReminderFloatingView: View {
         )
         .shadow(color: .black.opacity(isDisabled ? 0.02 : (isPrimaryAction ? 0.13 : 0.08)), radius: isPrimaryAction ? 9 : 6, x: 0, y: isPrimaryAction ? 4 : 3)
         .hoverTooltip(helpText(for: systemName))
+    }
+
+    private var shouldShowSnoozeButton: Bool {
+        appState.reminderPhase != .completed
+            && !appState.isReminderPreview
+            && intensity != .strong
     }
 
     private func helpText(for systemName: String) -> String {

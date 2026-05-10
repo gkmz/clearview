@@ -30,7 +30,7 @@ enum RhythmMode: String, CaseIterable, Codable, Equatable {
     var settingsKey: String { rawValue }
 }
 
-/// 提醒弹窗醒目程度：轻度更克制、重度更抢眼，默认中度兼顾多数用户。
+/// 提醒方式控制打断程度：温和不抢焦点，标准使用当前浮窗，严格减少跳过空间。
 enum ReminderIntensityLevel: String, CaseIterable, Codable, Equatable {
     case light
     case medium
@@ -39,26 +39,34 @@ enum ReminderIntensityLevel: String, CaseIterable, Codable, Equatable {
     var title: String {
         switch self {
         case .light:
-            return "轻度（更克制）"
+            return "温和（小横幅）"
         case .medium:
-            return "中度（默认）"
+            return "标准（默认）"
         case .strong:
-            return "重度（更醒目）"
+            return "严格（强提醒）"
         }
     }
 
     var shortTitle: String {
         switch self {
-        case .light: return "轻度"
-        case .medium: return "中度"
-        case .strong: return "重度"
+        case .light: return "温和"
+        case .medium: return "标准"
+        case .strong: return "严格"
+        }
+    }
+
+    var summary: String {
+        switch self {
+        case .light: return "小横幅，不打断"
+        case .medium: return "浮窗提醒"
+        case .strong: return "更醒目，少打扰选项"
         }
     }
 
     /// 面板宽度（与 `ReminderFloatingView` 外框一致）。
     var panelWidth: CGFloat {
         switch self {
-        case .light: return 480
+        case .light: return 420
         case .medium: return 560
         case .strong: return 640
         }
@@ -66,7 +74,7 @@ enum ReminderIntensityLevel: String, CaseIterable, Codable, Equatable {
 
     var panelHeight: CGFloat {
         switch self {
-        case .light: return 268
+        case .light: return 96
         case .medium: return 300
         case .strong: return 340
         }
@@ -74,7 +82,7 @@ enum ReminderIntensityLevel: String, CaseIterable, Codable, Equatable {
 
     var cornerRadius: CGFloat {
         switch self {
-        case .light: return 16
+        case .light: return 18
         case .medium: return 20
         case .strong: return 24
         }
@@ -122,7 +130,7 @@ enum ReminderIntensityLevel: String, CaseIterable, Codable, Equatable {
 
     var titleFontSize: CGFloat {
         switch self {
-        case .light: return 22
+        case .light: return 14
         case .medium: return 26
         case .strong: return 30
         }
@@ -130,7 +138,7 @@ enum ReminderIntensityLevel: String, CaseIterable, Codable, Equatable {
 
     var titleFrameHeight: CGFloat {
         switch self {
-        case .light: return 30
+        case .light: return 18
         case .medium: return 34
         case .strong: return 38
         }
