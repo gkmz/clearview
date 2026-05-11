@@ -10,7 +10,7 @@ English | [简体中文](README.zh-CN.md)
 
 ClearView is a very minimalist macOS app that helps users maintain healthier screen-time rhythms with periodic eye-break reminders and blue-light filter controls.
 
-> Current version: `0.1.0` (`release`)
+> Current version: `0.2.0` (`release`)
 
 ## Table of Contents
 - [ClearView](#clearview)
@@ -148,7 +148,7 @@ If you already built `ClearView.app` in Xcode, pass the path to skip the compile
 
 The default packaging flow uses `CODE_SIGNING_ALLOWED=NO`. For wider distribution, configure signing and notarization in Xcode and adjust your pipeline accordingly.
 
-> Build policy: `v0.1.0` is supported via Xcode / `xcodebuild` only, to ensure a complete macOS `.app` bundle (icon assets, bundle metadata, and packaging flow).
+> Build policy: current releases are supported via Xcode / `xcodebuild` only, to ensure a complete macOS `.app` bundle (icon assets, bundle metadata, and packaging flow).
 
 ## Project Structure
 
@@ -180,7 +180,7 @@ ClearView/
 
 ## Configuration and Data
 - User settings are stored locally in `UserDefaults`.
-- No account system, cloud sync, or telemetry in `v0.1.0`.
+- No account system, cloud sync, or telemetry in `v0.2.0`.
 - Shortcut and UI preference migrations are handled in `AppSettingsStore`.
 
 ## Troubleshooting
@@ -208,7 +208,7 @@ If you discover a vulnerability, please follow [SECURITY.md](SECURITY.md) and re
 ## Privacy
 - No account system.
 - No cloud sync.
-- No telemetry in `v0.1.0`.
+- No telemetry in `v0.2.0`.
 
 ## Screens
 
