@@ -70,6 +70,8 @@ final class AppState: ObservableObject {
     @Published var reminderToggleShortcutModifierFlagsRaw: UInt = 1_179_648
     @Published var snoozeReminderShortcutKeyCode: UInt16 = 1
     @Published var snoozeReminderShortcutModifierFlagsRaw: UInt = 1_179_648
+    @Published var toggleRhythmShortcutKeyCode: UInt16 = 15
+    @Published var toggleRhythmShortcutModifierFlagsRaw: UInt = 1_179_648
     @Published var cycleFilterShortcutKeyCode: UInt16 = 37
     @Published var cycleFilterShortcutModifierFlagsRaw: UInt = 1_179_648
     @Published var backgroundImageOpacity: Double = 1.0
@@ -162,6 +164,15 @@ final class AppState: ObservableObject {
                 self?.snoozeReminderFromShortcut()
             }
         }
+        let rhythmShortcutRegistered = shortcutManager.configure(
+            action: .toggleRhythmMode,
+            keyCode: toggleRhythmShortcutKeyCode,
+            modifierFlagsRaw: toggleRhythmShortcutModifierFlagsRaw
+        ) { [weak self] in
+            Task { @MainActor in
+                self?.toggleRhythmMode()
+            }
+        }
         if !mainPanelShortcutRegistered {
             statusText = "主界面快捷键注册失败，请在设置中重新选择"
         } else if !reminderToggleShortcutRegistered {
@@ -170,6 +181,8 @@ final class AppState: ObservableObject {
             statusText = "护眼模式快捷键注册失败，请在设置中重新选择"
         } else if !snoozeReminderShortcutRegistered {
             statusText = "稍后提醒快捷键注册失败，请在设置中重新选择"
+        } else if !rhythmShortcutRegistered {
+            statusText = "节奏快捷键注册失败，请在设置中重新选择"
         }
         mainPanel = MainPanelController(appState: self)
         reminderPanel = ReminderPanelController(appState: self)
@@ -271,6 +284,10 @@ final class AppState: ObservableObject {
         }
         secondsUntilBreak = rhythmConfiguration.initialFocusSeconds
         persistSettings()
+    }
+
+    func toggleRhythmMode() {
+        updateRhythmMode(rhythmMode == .eyeCare ? .pomodoro : .eyeCare)
     }
 
     func updatePomodoroFocus(_ minutes: Int) {
@@ -390,6 +407,8 @@ final class AppState: ObservableObject {
             return ShortcutBinding(keyCode: reminderToggleShortcutKeyCode, modifierFlagsRaw: reminderToggleShortcutModifierFlagsRaw)
         case .snoozeReminder:
             return ShortcutBinding(keyCode: snoozeReminderShortcutKeyCode, modifierFlagsRaw: snoozeReminderShortcutModifierFlagsRaw)
+        case .toggleRhythmMode:
+            return ShortcutBinding(keyCode: toggleRhythmShortcutKeyCode, modifierFlagsRaw: toggleRhythmShortcutModifierFlagsRaw)
         case .cycleBlueLightLevel:
             return ShortcutBinding(keyCode: cycleFilterShortcutKeyCode, modifierFlagsRaw: cycleFilterShortcutModifierFlagsRaw)
         }
@@ -406,6 +425,9 @@ final class AppState: ObservableObject {
         case .snoozeReminder:
             snoozeReminderShortcutKeyCode = binding.keyCode
             snoozeReminderShortcutModifierFlagsRaw = binding.modifierFlagsRaw
+        case .toggleRhythmMode:
+            toggleRhythmShortcutKeyCode = binding.keyCode
+            toggleRhythmShortcutModifierFlagsRaw = binding.modifierFlagsRaw
         case .cycleBlueLightLevel:
             cycleFilterShortcutKeyCode = binding.keyCode
             cycleFilterShortcutModifierFlagsRaw = binding.modifierFlagsRaw
@@ -695,6 +717,8 @@ final class AppState: ObservableObject {
         reminderToggleShortcutModifierFlagsRaw = settings.shortcutToggleReminderModifierFlagsRaw
         snoozeReminderShortcutKeyCode = settings.shortcutSnoozeReminderKeyCode
         snoozeReminderShortcutModifierFlagsRaw = settings.shortcutSnoozeReminderModifierFlagsRaw
+        toggleRhythmShortcutKeyCode = settings.shortcutToggleRhythmModeKeyCode
+        toggleRhythmShortcutModifierFlagsRaw = settings.shortcutToggleRhythmModeModifierFlagsRaw
         cycleFilterShortcutKeyCode = settings.shortcutCycleBlueLightLevelKeyCode
         cycleFilterShortcutModifierFlagsRaw = settings.shortcutCycleBlueLightLevelModifierFlagsRaw
         backgroundImageOpacity = min(max(settings.backgroundImageOpacity, 0.25), 1.0)
@@ -742,6 +766,8 @@ final class AppState: ObservableObject {
             shortcutToggleReminderModifierFlagsRaw: reminderToggleShortcutModifierFlagsRaw,
             shortcutSnoozeReminderKeyCode: snoozeReminderShortcutKeyCode,
             shortcutSnoozeReminderModifierFlagsRaw: snoozeReminderShortcutModifierFlagsRaw,
+            shortcutToggleRhythmModeKeyCode: toggleRhythmShortcutKeyCode,
+            shortcutToggleRhythmModeModifierFlagsRaw: toggleRhythmShortcutModifierFlagsRaw,
             shortcutCycleBlueLightLevelKeyCode: cycleFilterShortcutKeyCode,
             shortcutCycleBlueLightLevelModifierFlagsRaw: cycleFilterShortcutModifierFlagsRaw,
             backgroundImageOpacity: backgroundImageOpacity,

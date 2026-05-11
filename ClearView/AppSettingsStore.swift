@@ -200,6 +200,7 @@ enum ShortcutAction: String, CaseIterable, Codable {
     case toggleMainPanel
     case toggleReminder
     case snoozeReminder
+    case toggleRhythmMode
     case cycleBlueLightLevel
 
     var title: String {
@@ -210,6 +211,8 @@ enum ShortcutAction: String, CaseIterable, Codable {
             return "暂停/继续提醒"
         case .snoozeReminder:
             return "稍后提醒"
+        case .toggleRhythmMode:
+            return "切换节奏"
         case .cycleBlueLightLevel:
             return "切换护眼模式"
         }
@@ -224,6 +227,8 @@ enum ShortcutAction: String, CaseIterable, Codable {
             return ShortcutBinding(keyCode: 35, modifierFlagsRaw: 1_179_648) // Command + Shift + P
         case .snoozeReminder:
             return ShortcutBinding(keyCode: 1, modifierFlagsRaw: 1_179_648) // Command + Shift + S
+        case .toggleRhythmMode:
+            return ShortcutBinding(keyCode: 15, modifierFlagsRaw: 1_179_648) // Command + Shift + R
         case .cycleBlueLightLevel:
             return ShortcutBinding(keyCode: 37, modifierFlagsRaw: 1_179_648) // Command + Shift + L
         }
@@ -253,6 +258,8 @@ struct AppSettings: Codable {
     var shortcutToggleReminderModifierFlagsRaw: UInt
     var shortcutSnoozeReminderKeyCode: UInt16
     var shortcutSnoozeReminderModifierFlagsRaw: UInt
+    var shortcutToggleRhythmModeKeyCode: UInt16
+    var shortcutToggleRhythmModeModifierFlagsRaw: UInt
     var shortcutCycleBlueLightLevelKeyCode: UInt16
     var shortcutCycleBlueLightLevelModifierFlagsRaw: UInt
     var backgroundImageOpacity: Double
@@ -286,6 +293,8 @@ struct AppSettings: Codable {
         shortcutToggleReminderModifierFlagsRaw: ShortcutAction.toggleReminder.defaultBinding.modifierFlagsRaw,
         shortcutSnoozeReminderKeyCode: ShortcutAction.snoozeReminder.defaultBinding.keyCode,
         shortcutSnoozeReminderModifierFlagsRaw: ShortcutAction.snoozeReminder.defaultBinding.modifierFlagsRaw,
+        shortcutToggleRhythmModeKeyCode: ShortcutAction.toggleRhythmMode.defaultBinding.keyCode,
+        shortcutToggleRhythmModeModifierFlagsRaw: ShortcutAction.toggleRhythmMode.defaultBinding.modifierFlagsRaw,
         shortcutCycleBlueLightLevelKeyCode: ShortcutAction.cycleBlueLightLevel.defaultBinding.keyCode,
         shortcutCycleBlueLightLevelModifierFlagsRaw: ShortcutAction.cycleBlueLightLevel.defaultBinding.modifierFlagsRaw,
         backgroundImageOpacity: 1.0,
@@ -319,6 +328,8 @@ struct AppSettings: Codable {
         case shortcutToggleReminderModifierFlagsRaw
         case shortcutSnoozeReminderKeyCode
         case shortcutSnoozeReminderModifierFlagsRaw
+        case shortcutToggleRhythmModeKeyCode
+        case shortcutToggleRhythmModeModifierFlagsRaw
         case shortcutCycleBlueLightLevelKeyCode
         case shortcutCycleBlueLightLevelModifierFlagsRaw
         case backgroundImageOpacity
@@ -352,6 +363,8 @@ struct AppSettings: Codable {
         shortcutToggleReminderModifierFlagsRaw: UInt,
         shortcutSnoozeReminderKeyCode: UInt16,
         shortcutSnoozeReminderModifierFlagsRaw: UInt,
+        shortcutToggleRhythmModeKeyCode: UInt16,
+        shortcutToggleRhythmModeModifierFlagsRaw: UInt,
         shortcutCycleBlueLightLevelKeyCode: UInt16,
         shortcutCycleBlueLightLevelModifierFlagsRaw: UInt,
         backgroundImageOpacity: Double,
@@ -383,6 +396,8 @@ struct AppSettings: Codable {
         self.shortcutToggleReminderModifierFlagsRaw = shortcutToggleReminderModifierFlagsRaw
         self.shortcutSnoozeReminderKeyCode = shortcutSnoozeReminderKeyCode
         self.shortcutSnoozeReminderModifierFlagsRaw = shortcutSnoozeReminderModifierFlagsRaw
+        self.shortcutToggleRhythmModeKeyCode = shortcutToggleRhythmModeKeyCode
+        self.shortcutToggleRhythmModeModifierFlagsRaw = shortcutToggleRhythmModeModifierFlagsRaw
         self.shortcutCycleBlueLightLevelKeyCode = shortcutCycleBlueLightLevelKeyCode
         self.shortcutCycleBlueLightLevelModifierFlagsRaw = shortcutCycleBlueLightLevelModifierFlagsRaw
         self.backgroundImageOpacity = backgroundImageOpacity
@@ -425,6 +440,8 @@ struct AppSettings: Codable {
         shortcutToggleReminderModifierFlagsRaw = try container.decodeIfPresent(UInt.self, forKey: .shortcutToggleReminderModifierFlagsRaw) ?? defaults.shortcutToggleReminderModifierFlagsRaw
         shortcutSnoozeReminderKeyCode = try container.decodeIfPresent(UInt16.self, forKey: .shortcutSnoozeReminderKeyCode) ?? defaults.shortcutSnoozeReminderKeyCode
         shortcutSnoozeReminderModifierFlagsRaw = try container.decodeIfPresent(UInt.self, forKey: .shortcutSnoozeReminderModifierFlagsRaw) ?? defaults.shortcutSnoozeReminderModifierFlagsRaw
+        shortcutToggleRhythmModeKeyCode = try container.decodeIfPresent(UInt16.self, forKey: .shortcutToggleRhythmModeKeyCode) ?? defaults.shortcutToggleRhythmModeKeyCode
+        shortcutToggleRhythmModeModifierFlagsRaw = try container.decodeIfPresent(UInt.self, forKey: .shortcutToggleRhythmModeModifierFlagsRaw) ?? defaults.shortcutToggleRhythmModeModifierFlagsRaw
         shortcutCycleBlueLightLevelKeyCode = try container.decodeIfPresent(UInt16.self, forKey: .shortcutCycleBlueLightLevelKeyCode) ?? defaults.shortcutCycleBlueLightLevelKeyCode
         shortcutCycleBlueLightLevelModifierFlagsRaw = try container.decodeIfPresent(UInt.self, forKey: .shortcutCycleBlueLightLevelModifierFlagsRaw) ?? defaults.shortcutCycleBlueLightLevelModifierFlagsRaw
 

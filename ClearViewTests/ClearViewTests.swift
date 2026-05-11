@@ -40,6 +40,8 @@ struct ClearViewTests {
         #expect(settings.mergeEyeBreakThresholdSeconds == 120)
         #expect(settings.launchAtLoginEnabled == false)
         #expect(settings.startTimerOnLaunch == true)
+        #expect(settings.shortcutToggleRhythmModeKeyCode == ShortcutAction.toggleRhythmMode.defaultBinding.keyCode)
+        #expect(settings.shortcutToggleRhythmModeModifierFlagsRaw == ShortcutAction.toggleRhythmMode.defaultBinding.modifierFlagsRaw)
     }
 
     @Test @MainActor func rhythmConfigurationKeepsPomodoroDefaultsDistinctFromEyeBreaks() {
@@ -121,6 +123,17 @@ struct ClearViewTests {
         #expect(appState.reminderEnabled)
         #expect(appState.secondsUntilBreak == pausedSeconds)
         #expect(appState.secondsUntilBreak < appState.workIntervalMinutes * 60)
+    }
+
+    @Test @MainActor func toggleRhythmModeSwitchesBetweenEyeCareAndPomodoro() {
+        let appState = AppState()
+        appState.updateRhythmMode(.eyeCare)
+
+        appState.toggleRhythmMode()
+        #expect(appState.rhythmMode == .pomodoro)
+
+        appState.toggleRhythmMode()
+        #expect(appState.rhythmMode == .eyeCare)
     }
 
 }

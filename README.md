@@ -98,6 +98,7 @@ The default shortcuts are listed below and can be changed in settings:
 | Open main panel | `⌘⇧Space` |
 | Pause/resume reminders | `⌘⇧P` |
 | Snooze reminder | `⌘⇧S` |
+| Switch Eye Relax/Pomodoro rhythm | `⌘⇧R` |
 | Switch eye-care mode | `⌘⇧L` |
 
 ## Quick Start (Xcode)

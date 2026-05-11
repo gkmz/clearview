@@ -17,6 +17,10 @@ struct MenuBarView: View {
             appState.toggleReminder(!appState.reminderEnabled)
         }
 
+        Button("切换到\(appState.rhythmMode == .eyeCare ? "番茄" : "舒眼")") {
+            appState.toggleRhythmMode()
+        }
+
         Divider()
 
         Button("退出 ClearView") {
