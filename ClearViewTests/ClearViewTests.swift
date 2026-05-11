@@ -38,6 +38,8 @@ struct ClearViewTests {
         #expect(settings.pomodoroBreakMinutes == 5)
         #expect(settings.pomodoroEyeBreakEnabled == true)
         #expect(settings.mergeEyeBreakThresholdSeconds == 120)
+        #expect(settings.launchAtLoginEnabled == false)
+        #expect(settings.startTimerOnLaunch == true)
     }
 
     @Test @MainActor func rhythmConfigurationKeepsPomodoroDefaultsDistinctFromEyeBreaks() {
@@ -49,6 +51,33 @@ struct ClearViewTests {
         #expect(settings.pomodoroFocusMinutes == 25)
         #expect(settings.pomodoroBreakMinutes == 5)
         #expect(settings.pomodoroEyeBreakEnabled)
+    }
+
+    @Test @MainActor func pomodoroFocusDoesNotInsertEyeBreaks() {
+        let service = ReminderService()
+        let configuration = RhythmConfiguration(
+            mode: .pomodoro,
+            eyeIntervalMinutes: 1,
+            eyeBreakDurationSeconds: 5,
+            pomodoroFocusMinutes: 1,
+            pomodoroBreakMinutes: 1,
+            pomodoroEyeBreakEnabled: true,
+            mergeEyeBreakThresholdSeconds: 0
+        )
+        var triggeredBreaks: [RhythmBreakKind] = []
+
+        service.onBreakTriggered = { kind in
+            triggeredBreaks.append(kind)
+        }
+
+        service.start(configuration: configuration)
+        service.stop()
+        for _ in 0..<60 {
+            service.advanceOneSecondForTesting()
+        }
+        service.stop()
+
+        #expect(triggeredBreaks == [.pomodoro])
     }
 
 }

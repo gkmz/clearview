@@ -434,37 +434,24 @@ struct ContentView: View {
                     ) { appState.updateBreakDuration($0) }
                 }
 
-                if appState.rhythmMode == .pomodoro {
-                    rhythmSummaryCard(
-                        id: "pomodoro",
-                        title: "番茄规则",
-                        summary: "\(appState.pomodoroFocusMinutes) 分钟专注 · 休息 \(appState.pomodoroBreakMinutes) 分钟"
-                    ) {
-                        presetRow(
-                            title: "专注多久",
-                            values: [25, 45, 50, 60],
-                            unit: "分钟",
-                            selected: appState.pomodoroFocusMinutes
-                        ) { appState.updatePomodoroFocus($0) }
+                rhythmSummaryCard(
+                    id: "pomodoro",
+                    title: "番茄规则",
+                    summary: "\(appState.pomodoroFocusMinutes) 分钟专注 · 休息 \(appState.pomodoroBreakMinutes) 分钟"
+                ) {
+                    presetRow(
+                        title: "专注多久",
+                        values: [25, 45, 50, 60],
+                        unit: "分钟",
+                        selected: appState.pomodoroFocusMinutes
+                    ) { appState.updatePomodoroFocus($0) }
 
-                        presetRow(
-                            title: "休息多久",
-                            values: [5, 10, 15, 20],
-                            unit: "分钟",
-                            selected: appState.pomodoroBreakMinutes
-                        ) { appState.updatePomodoroBreak($0) }
-                    }
-
-                    compactToggleRow(
-                        title: "专注中护眼",
-                        summary: appState.pomodoroEyeBreakEnabled
-                            ? "每 \(appState.workIntervalMinutes) 分钟舒眼 \(appState.breakDurationSeconds) 秒"
-                            : "关闭",
-                        isOn: Binding(
-                            get: { appState.pomodoroEyeBreakEnabled },
-                            set: { appState.updatePomodoroEyeBreakEnabled($0) }
-                        )
-                    )
+                    presetRow(
+                        title: "休息多久",
+                        values: [5, 10, 15, 20],
+                        unit: "分钟",
+                        selected: appState.pomodoroBreakMinutes
+                    ) { appState.updatePomodoroBreak($0) }
                 }
             }
 
@@ -508,15 +495,29 @@ struct ContentView: View {
             }
 
             settingsSection(title: "偏好", isExpanded: $isPreferenceSettingsExpanded) {
-                HStack(spacing: 10) {
-                    settingToggleCard(
-                        title: "结束提示音",
-                        isOn: Binding(
-                            get: { appState.playBreakFinishedSound },
-                            set: { appState.updateBreakFinishedSoundEnabled($0) }
-                        )
+                settingToggleCard(
+                    title: "开机启动",
+                    isOn: Binding(
+                        get: { appState.launchAtLoginEnabled },
+                        set: { appState.updateLaunchAtLoginEnabled($0) }
                     )
-                }
+                )
+
+                settingToggleCard(
+                    title: "启动后自动计时",
+                    isOn: Binding(
+                        get: { appState.startTimerOnLaunch },
+                        set: { appState.updateStartTimerOnLaunch($0) }
+                    )
+                )
+
+                settingToggleCard(
+                    title: "结束提示音",
+                    isOn: Binding(
+                        get: { appState.playBreakFinishedSound },
+                        set: { appState.updateBreakFinishedSoundEnabled($0) }
+                    )
+                )
 
                 reminderIntensityRow()
 
@@ -592,10 +593,10 @@ struct ContentView: View {
             }
         }
         .padding(10)
-        .background(Color.white.opacity(0.06))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .background(Color.white.opacity(0.045))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         // 关键流程：折叠状态下整张小标题卡片都可点击，避免只能点文字行。
-        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .onTapGesture {
             if !isExpanded.wrappedValue {
                 toggleSection()
@@ -821,18 +822,12 @@ struct ContentView: View {
     }
 
     private func rhythmModeRow() -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text("节奏模式")
-                    .font(.caption)
-                    .foregroundStyle(textPrimary)
-                Spacer()
-                Text(appState.rhythmMode.title)
-                    .font(.caption)
-                    .foregroundStyle(textSecondary.opacity(0.92))
-            }
+        VStack(alignment: .leading, spacing: 8) {
+            Text("节奏模式")
+                .font(.caption)
+                .foregroundStyle(textSecondary)
 
-            HStack(spacing: 8) {
+            HStack(spacing: 4) {
                 ForEach(RhythmMode.allCases, id: \.self) { mode in
                     let isSelected = appState.rhythmMode == mode
                     Button {
@@ -840,18 +835,9 @@ struct ContentView: View {
                     } label: {
                         Text(mode.title)
                             .font(.caption.weight(isSelected ? .bold : .semibold))
-                            .frame(width: 76, height: 28)
+                            .frame(maxWidth: .infinity, minHeight: 30)
                             .foregroundStyle(isSelected ? Color.white : textPrimary)
-                            .background(isSelected ? Color.white.opacity(isDark ? 0.34 : 0.30) : Color.clear)
-                            .modifier(
-                                GlassButtonModifier(
-                                    cornerRadius: 14,
-                                    intensity: isSelected ? 0.60 : 1.0,
-                                    tint: buttonTint,
-                                    border: isSelected ? Color.white.opacity(0.50) : buttonBorder
-                                )
-                            )
-                            .scaleEffect(isSelected ? 1.04 : 1.0)
+                            .background(isSelected ? Color.white.opacity(isDark ? 0.30 : 0.26) : Color.clear)
                             .clipShape(Capsule())
                     }
                     .buttonStyle(.plain)
@@ -859,6 +845,13 @@ struct ContentView: View {
                     .hoverTooltip("切换到\(mode.statusTitle)，并重新开始计时")
                 }
             }
+            .padding(4)
+            .background(Color.white.opacity(0.075))
+            .clipShape(Capsule(style: .continuous))
+            .overlay(
+                Capsule(style: .continuous)
+                    .stroke(Color.white.opacity(0.14), lineWidth: 1)
+            )
         }
     }
 
@@ -905,41 +898,14 @@ struct ContentView: View {
                 .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
-        .padding(10)
-        .background(Color.white.opacity(isExpanded ? 0.10 : 0.075))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .padding(.horizontal, 10)
+        .padding(.vertical, 9)
+        .background(Color.white.opacity(isExpanded ? 0.085 : 0.055))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.white.opacity(isExpanded ? 0.26 : 0.16), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(Color.white.opacity(isExpanded ? 0.20 : 0.10), lineWidth: 1)
         )
-    }
-
-    private func compactToggleRow(title: String, summary: String, isOn: Binding<Bool>) -> some View {
-        HStack(spacing: 10) {
-            Text(title)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(textPrimary)
-
-            Text(summary)
-                .font(.caption)
-                .foregroundStyle(textSecondary.opacity(0.88))
-                .lineLimit(1)
-                .truncationMode(.tail)
-
-            Spacer()
-
-            Toggle("", isOn: isOn)
-                .toggleStyle(.switch)
-                .labelsHidden()
-        }
-        .padding(10)
-        .background(Color.white.opacity(0.075))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.white.opacity(0.16), lineWidth: 1)
-        )
-        .hoverTooltip("接近休息时会自动合并提醒")
     }
 
     private func presetRow(

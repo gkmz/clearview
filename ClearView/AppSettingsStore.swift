@@ -268,6 +268,8 @@ struct AppSettings: Codable {
     var settingsWindowOpacity: Double
     /// 提醒弹窗强度：`light` / `medium` / `strong`，缺省按中度解码。
     var reminderIntensityKey: String
+    var launchAtLoginEnabled: Bool
+    var startTimerOnLaunch: Bool
 
     static let `default` = AppSettings(
         reminderEnabled: true,
@@ -296,8 +298,10 @@ struct AppSettings: Codable {
         backgroundImageOpacity: 1.0,
         mainWindowOpacity: 0.80,
         reminderWindowOpacity: 0.78,
-        settingsWindowOpacity: 0.78,
-        reminderIntensityKey: ReminderIntensityLevel.medium.settingsKey
+        settingsWindowOpacity: 0.86,
+        reminderIntensityKey: ReminderIntensityLevel.medium.settingsKey,
+        launchAtLoginEnabled: false,
+        startTimerOnLaunch: true
     )
 
     enum CodingKeys: String, CodingKey {
@@ -329,6 +333,8 @@ struct AppSettings: Codable {
         case reminderWindowOpacity
         case settingsWindowOpacity
         case reminderIntensityKey
+        case launchAtLoginEnabled
+        case startTimerOnLaunch
     }
 
     init(
@@ -359,7 +365,9 @@ struct AppSettings: Codable {
         mainWindowOpacity: Double,
         reminderWindowOpacity: Double,
         settingsWindowOpacity: Double,
-        reminderIntensityKey: String
+        reminderIntensityKey: String,
+        launchAtLoginEnabled: Bool,
+        startTimerOnLaunch: Bool
     ) {
         self.reminderEnabled = reminderEnabled
         self.rhythmModeKey = rhythmModeKey
@@ -389,6 +397,8 @@ struct AppSettings: Codable {
         self.reminderWindowOpacity = reminderWindowOpacity
         self.settingsWindowOpacity = settingsWindowOpacity
         self.reminderIntensityKey = reminderIntensityKey
+        self.launchAtLoginEnabled = launchAtLoginEnabled
+        self.startTimerOnLaunch = startTimerOnLaunch
     }
 
     init(from decoder: Decoder) throws {
@@ -430,6 +440,8 @@ struct AppSettings: Codable {
         reminderWindowOpacity = try container.decodeIfPresent(Double.self, forKey: .reminderWindowOpacity) ?? defaults.reminderWindowOpacity
         settingsWindowOpacity = try container.decodeIfPresent(Double.self, forKey: .settingsWindowOpacity) ?? defaults.settingsWindowOpacity
         reminderIntensityKey = try container.decodeIfPresent(String.self, forKey: .reminderIntensityKey) ?? defaults.reminderIntensityKey
+        launchAtLoginEnabled = try container.decodeIfPresent(Bool.self, forKey: .launchAtLoginEnabled) ?? defaults.launchAtLoginEnabled
+        startTimerOnLaunch = try container.decodeIfPresent(Bool.self, forKey: .startTimerOnLaunch) ?? defaults.startTimerOnLaunch
     }
 }
 

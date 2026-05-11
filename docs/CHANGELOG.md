@@ -6,8 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - Pomodoro rhythm mode with configurable focus and break durations.
-- Optional eye-care micro-breaks during Pomodoro focus sessions.
-- Automatic merging of eye-care reminders into nearby Pomodoro breaks to avoid duplicate interruptions.
+- Simplified Pomodoro rhythm that keeps focus uninterrupted and guides eye relaxation at the start of rest.
+- Launch-at-login and start-timer-on-launch preferences.
 
 ## [0.1.0] - 2026-04-29
 

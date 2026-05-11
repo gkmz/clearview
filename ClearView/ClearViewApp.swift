@@ -9,6 +9,7 @@ import AppKit
 import SwiftUI
 import Foundation
 import Combine
+import ServiceManagement
 
 @main
 struct ClearViewApp: App {
@@ -59,8 +60,6 @@ final class AppState: ObservableObject {
     @Published var breakDurationSeconds: Int = 20
     @Published var pomodoroFocusMinutes: Int = 25
     @Published var pomodoroBreakMinutes: Int = 5
-    @Published var pomodoroEyeBreakEnabled = true
-    @Published var mergeEyeBreakThresholdSeconds: Int = 120
     @Published var secondsUntilBreak: Int = 20 * 60
     @Published var filterLevel: BlueLightLevel = .off
     @Published var useBackgroundImage = true
@@ -79,6 +78,8 @@ final class AppState: ObservableObject {
     @Published var settingsWindowOpacity: Double = 0.78
     /// 提醒弹窗强度（轻/中/重），控制面板尺寸与字号醒目度。
     @Published var reminderIntensity: ReminderIntensityLevel = .medium
+    @Published var launchAtLoginEnabled = false
+    @Published var startTimerOnLaunch = true
     @Published var statusText: String = "陪你护眼"
     @Published var reminderPhase: ReminderPhase = .none
     @Published var breakSecondsLeft: Int = 20
@@ -91,6 +92,8 @@ final class AppState: ObservableObject {
     private let settingsStore = AppSettingsStore()
     private let preparationSeconds = 5
     private let previewSeconds = 20
+    private var pomodoroEyeBreakEnabled = true
+    private var mergeEyeBreakThresholdSeconds: Int = 120
     private var reminderEnabledBeforePreview = true
     private var breakCountdownTimer: Timer?
     private var mainPanel: MainPanelController?
@@ -116,9 +119,10 @@ final class AppState: ObservableObject {
             }
         }
 
-        if reminderEnabled {
+        if reminderEnabled, startTimerOnLaunch {
             reminderService.start(configuration: rhythmConfiguration)
         } else {
+            reminderEnabled = false
             reminderService.stop()
         }
         // 应用启动时集中注册所有全局快捷键，若任一失败立即反馈给用户。
@@ -282,15 +286,6 @@ final class AppState: ObservableObject {
         persistSettings()
     }
 
-    func updatePomodoroEyeBreakEnabled(_ enabled: Bool) {
-        pomodoroEyeBreakEnabled = enabled
-        statusText = enabled ? "番茄中启用舒眼" : "番茄中关闭舒眼"
-        if reminderEnabled, rhythmMode == .pomodoro {
-            reminderService.start(configuration: rhythmConfiguration)
-        }
-        persistSettings()
-    }
-
     func resetReminderTimer() {
         reminderEnabled = false
         reminderService.reset(configuration: rhythmConfiguration)
@@ -319,6 +314,28 @@ final class AppState: ObservableObject {
     func updateBreakFinishedSoundEnabled(_ enabled: Bool) {
         playBreakFinishedSound = enabled
         statusText = enabled ? "结束提示音已启用" : "结束提示音已关闭"
+        persistSettings()
+    }
+
+    func updateLaunchAtLoginEnabled(_ enabled: Bool) {
+        do {
+            if enabled {
+                try SMAppService.mainApp.register()
+            } else {
+                try SMAppService.mainApp.unregister()
+            }
+            launchAtLoginEnabled = enabled
+            statusText = enabled ? "已开启开机启动" : "已关闭开机启动"
+            persistSettings()
+        } catch {
+            launchAtLoginEnabled = SMAppService.mainApp.status == .enabled
+            statusText = "开机启动设置失败"
+        }
+    }
+
+    func updateStartTimerOnLaunch(_ enabled: Bool) {
+        startTimerOnLaunch = enabled
+        statusText = enabled ? "启动后自动计时" : "启动后保持暂停"
         persistSettings()
     }
 
@@ -684,6 +701,8 @@ final class AppState: ObservableObject {
         reminderWindowOpacity = min(max(settings.reminderWindowOpacity, 0.25), 1.0)
         settingsWindowOpacity = min(max(settings.settingsWindowOpacity, 0.25), 1.0)
         reminderIntensity = ReminderIntensityLevel.fromSettingsKey(settings.reminderIntensityKey)
+        launchAtLoginEnabled = SMAppService.mainApp.status == .enabled
+        startTimerOnLaunch = settings.startTimerOnLaunch
 
         // 应用启动时恢复倒计时基础值，避免界面显示与配置不一致。
         secondsUntilBreak = workIntervalMinutes * 60
@@ -728,7 +747,9 @@ final class AppState: ObservableObject {
             mainWindowOpacity: mainWindowOpacity,
             reminderWindowOpacity: reminderWindowOpacity,
             settingsWindowOpacity: settingsWindowOpacity,
-            reminderIntensityKey: reminderIntensity.settingsKey
+            reminderIntensityKey: reminderIntensity.settingsKey,
+            launchAtLoginEnabled: launchAtLoginEnabled,
+            startTimerOnLaunch: startTimerOnLaunch
         )
         settingsStore.save(settings)
     }

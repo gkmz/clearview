@@ -6,6 +6,8 @@ struct RhythmConfiguration: Equatable {
     var eyeBreakDurationSeconds: Int
     var pomodoroFocusMinutes: Int
     var pomodoroBreakMinutes: Int
+    // Legacy settings kept for decoding older preferences. Pomodoro focus no longer
+    // inserts eye-care breaks; rest starts after the focus session ends.
     var pomodoroEyeBreakEnabled: Bool
     var mergeEyeBreakThresholdSeconds: Int
 
@@ -64,19 +66,18 @@ final class ReminderService {
     private var phase: RhythmServicePhase = .focus
     private var focusSecondsRemaining: Int = 20 * 60
     private var phaseSecondsLeft: Int = 20 * 60
-    private var secondsUntilNextEyeBreak: Int = 20 * 60
 
     func start(configuration: RhythmConfiguration) {
         stop()
         self.configuration = normalized(configuration)
-        beginFocus(resetEyeBreak: true)
+        beginFocus()
         scheduleMainTimerIfNeeded()
     }
 
     func reset(configuration: RhythmConfiguration) {
         stop()
         self.configuration = normalized(configuration)
-        beginFocus(resetEyeBreak: true)
+        beginFocus()
     }
 
     func stop() {
@@ -91,20 +92,12 @@ final class ReminderService {
     }
 
     func completeBreak() {
-        if shouldResumePomodoroFocusAfterEyeBreak {
-            resumeFocusAfterEyeBreak()
-        } else {
-            beginFocus(resetEyeBreak: true)
-        }
+        beginFocus()
         scheduleMainTimerIfNeeded()
     }
 
     func skipBreak() {
-        if shouldResumePomodoroFocusAfterEyeBreak {
-            resumeFocusAfterEyeBreak()
-        } else {
-            beginFocus(resetEyeBreak: true)
-        }
+        beginFocus()
         scheduleMainTimerIfNeeded()
     }
 
@@ -113,9 +106,12 @@ final class ReminderService {
         phase = .focus
         focusSecondsRemaining = max(1, minutes) * 60
         phaseSecondsLeft = focusSecondsRemaining
-        secondsUntilNextEyeBreak = focusSecondsRemaining
         emitTick()
         scheduleMainTimerIfNeeded()
+    }
+
+    func advanceOneSecondForTesting() {
+        advanceOneSecond()
     }
 
     private func normalized(_ configuration: RhythmConfiguration) -> RhythmConfiguration {
@@ -130,13 +126,10 @@ final class ReminderService {
         )
     }
 
-    private func beginFocus(resetEyeBreak: Bool) {
+    private func beginFocus() {
         phase = .focus
         focusSecondsRemaining = configuration.initialFocusSeconds
         phaseSecondsLeft = focusSecondsRemaining
-        if resetEyeBreak {
-            secondsUntilNextEyeBreak = configuration.eyeIntervalSeconds
-        }
         emitTick()
     }
 
@@ -148,19 +141,6 @@ final class ReminderService {
         case .pomodoro:
             phaseSecondsLeft = configuration.pomodoroBreakSeconds
         }
-        emitTick()
-    }
-
-    private var shouldResumePomodoroFocusAfterEyeBreak: Bool {
-        guard configuration.mode == .pomodoro else { return false }
-        guard case .breakTime(.eye) = phase else { return false }
-        return focusSecondsRemaining > 0
-    }
-
-    private func resumeFocusAfterEyeBreak() {
-        phase = .focus
-        phaseSecondsLeft = focusSecondsRemaining
-        secondsUntilNextEyeBreak = configuration.eyeIntervalSeconds
         emitTick()
     }
 
@@ -185,10 +165,6 @@ final class ReminderService {
         focusSecondsRemaining -= 1
         phaseSecondsLeft = focusSecondsRemaining
 
-        if configuration.mode == .pomodoro, configuration.pomodoroEyeBreakEnabled {
-            secondsUntilNextEyeBreak -= 1
-        }
-
         if focusSecondsRemaining <= 0 {
             stop()
             beginBreak(configuration.mode == .pomodoro ? .pomodoro : .eye)
@@ -196,24 +172,7 @@ final class ReminderService {
             return
         }
 
-        if shouldTriggerEyeBreakDuringPomodoroFocus {
-            stop()
-            beginBreak(.eye)
-            onBreakTriggered?(.eye)
-            return
-        }
-
         emitTick()
-    }
-
-    private var shouldTriggerEyeBreakDuringPomodoroFocus: Bool {
-        guard configuration.mode == .pomodoro, configuration.pomodoroEyeBreakEnabled else {
-            return false
-        }
-        guard secondsUntilNextEyeBreak <= 0 else {
-            return false
-        }
-        return focusSecondsRemaining > configuration.mergeEyeBreakThresholdSeconds
     }
 
     private func advanceBreak() {
