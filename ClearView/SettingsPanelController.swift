@@ -204,44 +204,46 @@ private struct SettingsPanelView: View {
             settingsSection(title: "节奏", isExpanded: $isRhythmSettingsExpanded) {
                 rhythmModeRow()
 
-                rhythmSummaryCard(
-                    id: "eye",
-                    title: "护眼规则",
-                    summary: "每 \(appState.workIntervalMinutes) 分钟 · 舒眼 \(appState.breakDurationSeconds) 秒"
-                ) {
-                    presetRow(
-                        title: "多久看远方",
-                        values: [20, 25, 45, 60],
-                        unit: "分钟",
-                        selected: appState.workIntervalMinutes
-                    ) { appState.updateInterval($0) }
+                if appState.rhythmMode == .eyeCare {
+                    rhythmSummaryCard(
+                        id: "eye",
+                        title: "护眼规则",
+                        summary: "每 \(appState.workIntervalMinutes) 分钟 · 舒眼 \(appState.breakDurationSeconds) 秒"
+                    ) {
+                        presetRow(
+                            title: "多久看远方",
+                            values: [20, 25, 45, 60],
+                            unit: "分钟",
+                            selected: appState.workIntervalMinutes
+                        ) { appState.updateInterval($0) }
 
-                    presetRow(
-                        title: "看远方多久",
-                        values: [20, 40, 60, 90],
-                        unit: "秒",
-                        selected: appState.breakDurationSeconds
-                    ) { appState.updateBreakDuration($0) }
-                }
+                        presetRow(
+                            title: "看远方多久",
+                            values: [20, 40, 60, 90],
+                            unit: "秒",
+                            selected: appState.breakDurationSeconds
+                        ) { appState.updateBreakDuration($0) }
+                    }
+                } else {
+                    rhythmSummaryCard(
+                        id: "pomodoro",
+                        title: "番茄规则",
+                        summary: "\(appState.pomodoroFocusMinutes) 分钟专注 · 休息 \(appState.pomodoroBreakMinutes) 分钟"
+                    ) {
+                        presetRow(
+                            title: "专注多久",
+                            values: [25, 45, 50, 60],
+                            unit: "分钟",
+                            selected: appState.pomodoroFocusMinutes
+                        ) { appState.updatePomodoroFocus($0) }
 
-                rhythmSummaryCard(
-                    id: "pomodoro",
-                    title: "番茄规则",
-                    summary: "\(appState.pomodoroFocusMinutes) 分钟专注 · 休息 \(appState.pomodoroBreakMinutes) 分钟"
-                ) {
-                    presetRow(
-                        title: "专注多久",
-                        values: [25, 45, 50, 60],
-                        unit: "分钟",
-                        selected: appState.pomodoroFocusMinutes
-                    ) { appState.updatePomodoroFocus($0) }
-
-                    presetRow(
-                        title: "休息多久",
-                        values: [5, 10, 15, 20],
-                        unit: "分钟",
-                        selected: appState.pomodoroBreakMinutes
-                    ) { appState.updatePomodoroBreak($0) }
+                        presetRow(
+                            title: "休息多久",
+                            values: [5, 10, 15, 20],
+                            unit: "分钟",
+                            selected: appState.pomodoroBreakMinutes
+                        ) { appState.updatePomodoroBreak($0) }
+                    }
                 }
             }
 
@@ -436,6 +438,7 @@ private struct SettingsPanelView: View {
                 ForEach(RhythmMode.allCases, id: \.self) { mode in
                     let isSelected = appState.rhythmMode == mode
                     Button {
+                        expandedRhythmCard = nil
                         appState.updateRhythmMode(mode)
                     } label: {
                         Text(mode.title)
@@ -444,7 +447,9 @@ private struct SettingsPanelView: View {
                             .foregroundStyle(isSelected ? Color.white : textPrimary)
                             .background(isSelected ? Color.white.opacity(isDark ? 0.30 : 0.26) : Color.clear)
                             .clipShape(Capsule())
+                            .contentShape(Capsule())
                     }
+                    .frame(maxWidth: .infinity)
                     .buttonStyle(.plain)
                     .focusable(false)
                     .hoverTooltip("切换到\(mode.statusTitle)，并重新开始计时")

@@ -80,4 +80,15 @@ struct ClearViewTests {
         #expect(triggeredBreaks == [.pomodoro])
     }
 
+    @Test @MainActor func rhythmModeSwitchRefreshesDisplayedCountdownWhenPaused() {
+        let appState = AppState()
+        appState.updateRhythmMode(.eyeCare)
+        appState.toggleReminder(false)
+
+        appState.updateRhythmMode(.pomodoro)
+
+        #expect(appState.reminderEnabled == false)
+        #expect(appState.secondsUntilBreak == appState.pomodoroFocusMinutes * 60)
+    }
+
 }

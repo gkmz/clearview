@@ -267,7 +267,10 @@ final class AppState: ObservableObject {
         statusText = mode == .eyeCare ? "已切换到护眼，重新开始倒计时" : "已切换到番茄，开始新一轮专注"
         if reminderEnabled {
             reminderService.start(configuration: rhythmConfiguration)
+        } else {
+            reminderService.reset(configuration: rhythmConfiguration)
         }
+        secondsUntilBreak = rhythmConfiguration.initialFocusSeconds
         persistSettings()
     }
 
