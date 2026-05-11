@@ -85,6 +85,12 @@ final class ReminderService {
         timer = nil
     }
 
+    func resume(configuration: RhythmConfiguration) {
+        self.configuration = normalized(configuration)
+        emitTick()
+        scheduleMainTimerIfNeeded()
+    }
+
     func forceTrigger(kind: RhythmBreakKind = .eye) {
         stop()
         beginBreak(kind)

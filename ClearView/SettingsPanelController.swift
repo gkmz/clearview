@@ -207,7 +207,7 @@ private struct SettingsPanelView: View {
                 if appState.rhythmMode == .eyeCare {
                     rhythmSummaryCard(
                         id: "eye",
-                        title: "护眼规则",
+                        title: "舒眼规则",
                         summary: "每 \(appState.workIntervalMinutes) 分钟 · 舒眼 \(appState.breakDurationSeconds) 秒"
                     ) {
                         presetRow(
@@ -452,7 +452,7 @@ private struct SettingsPanelView: View {
                     .frame(maxWidth: .infinity)
                     .buttonStyle(.plain)
                     .focusable(false)
-                    .hoverTooltip("切换到\(mode.statusTitle)，并重新开始计时")
+                    .hoverTooltip("切换到\(mode.title)，并重新开始计时")
                 }
             }
             .padding(4)

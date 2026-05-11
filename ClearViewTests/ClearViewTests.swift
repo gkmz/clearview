@@ -106,4 +106,21 @@ struct ClearViewTests {
         #expect(appState.reminderEnabled == reminderEnabledBeforePreview)
     }
 
+    @Test @MainActor func resumeReminderKeepsPausedCountdown() async {
+        let appState = AppState()
+        appState.updateRhythmMode(.eyeCare)
+        appState.toggleReminder(true)
+        appState.updateInterval(20)
+        appState.reminderService.advanceOneSecondForTesting()
+        await Task.yield()
+        appState.toggleReminder(false)
+        let pausedSeconds = appState.secondsUntilBreak
+
+        appState.toggleReminder(true)
+
+        #expect(appState.reminderEnabled)
+        #expect(appState.secondsUntilBreak == pausedSeconds)
+        #expect(appState.secondsUntilBreak < appState.workIntervalMinutes * 60)
+    }
+
 }

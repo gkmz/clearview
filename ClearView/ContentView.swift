@@ -165,7 +165,7 @@ struct ContentView: View {
 
     private var topTabs: some View {
         HStack {
-            tabButton(title: AppCopy.Tab.eyeRelax, page: .timer)
+            tabButton(title: appState.rhythmMode.title, page: .timer)
             tabButton(title: AppCopy.Tab.eyeCare, page: .filter)
         }
         .padding(6)
@@ -214,7 +214,7 @@ struct ContentView: View {
     private var pageDisplayArea: some View {
         Group {
             if page == .timer {
-                VStack(spacing: 4) {
+                VStack(spacing: 0) {
                     StableText(
                         format(seconds: appState.secondsUntilBreak),
                         size: 66,
@@ -223,11 +223,8 @@ struct ContentView: View {
                         usesMonospacedDigit: true
                     )
                     .frame(height: 72)
-
-                    StableText(appState.rhythmMode.statusTitle, size: 13, weight: .semibold, alpha: 0.78)
-                        .frame(height: 18)
                 }
-                .frame(height: 94)
+                .frame(height: 86)
             } else {
                 StableText("护眼模式", size: 42, weight: .bold, alpha: 0.96)
                     .frame(height: 52)
@@ -417,7 +414,7 @@ struct ContentView: View {
                 if appState.rhythmMode == .eyeCare {
                     rhythmSummaryCard(
                         id: "eye",
-                        title: "护眼规则",
+                        title: "舒眼规则",
                         summary: "每 \(appState.workIntervalMinutes) 分钟 · 舒眼 \(appState.breakDurationSeconds) 秒"
                     ) {
                         presetRow(
@@ -847,7 +844,7 @@ struct ContentView: View {
                     .frame(maxWidth: .infinity)
                     .buttonStyle(.plain)
                     .focusable(false)
-                    .hoverTooltip("切换到\(mode.statusTitle)，并重新开始计时")
+                    .hoverTooltip("切换到\(mode.title)，并重新开始计时")
                 }
             }
             .padding(4)

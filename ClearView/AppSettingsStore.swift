@@ -11,15 +11,8 @@ enum RhythmMode: String, CaseIterable, Codable, Equatable {
 
     var title: String {
         switch self {
-        case .eyeCare: return "护眼"
+        case .eyeCare: return "舒眼"
         case .pomodoro: return "番茄"
-        }
-    }
-
-    var statusTitle: String {
-        switch self {
-        case .eyeCare: return "护眼节奏"
-        case .pomodoro: return "番茄专注"
         }
     }
 

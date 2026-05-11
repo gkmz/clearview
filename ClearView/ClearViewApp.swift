@@ -218,8 +218,8 @@ final class AppState: ObservableObject {
     func toggleReminder(_ enabled: Bool) {
         reminderEnabled = enabled
         if enabled {
-            reminderService.start(configuration: rhythmConfiguration)
-            statusText = "会按时提醒你"
+            reminderService.resume(configuration: rhythmConfiguration)
+            statusText = "继续当前计时"
         } else {
             reminderService.stop()
             statusText = "先不打扰"
