@@ -114,6 +114,17 @@ ClearView 是一款极简的 macOS 菜单栏护眼应用，帮助你通过周期
 
 ## 构建与测试
 
+### 本地脚本
+在仓库根目录执行：
+
+```bash
+./scripts/dev.sh build   # 编译 Debug 应用
+./scripts/dev.sh test    # 运行测试
+./scripts/dev.sh run     # 编译并启动 ClearView
+```
+
+脚本会使用项目内的 `build/DerivedData`，日常开发检查不需要打开 Xcode。
+
 ### Xcode
 - 构建：`Product -> Build`
 - 运行：`Product -> Run`

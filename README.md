@@ -114,6 +114,17 @@ Requirements:
 
 ## Build and Test
 
+### Local Scripts
+From the repository root:
+
+```bash
+./scripts/dev.sh build   # compile the Debug app
+./scripts/dev.sh test    # run tests
+./scripts/dev.sh run     # compile and launch ClearView
+```
+
+The scripts use `build/DerivedData` inside the project, so you do not need to open Xcode for normal development checks.
+
 ### Xcode
 - Build: `Product -> Build`
 - Run: `Product -> Run`
