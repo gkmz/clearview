@@ -119,7 +119,8 @@ From the repository root:
 
 ```bash
 ./scripts/dev.sh build   # compile the Debug app
-./scripts/dev.sh test    # run tests
+./scripts/dev.sh unit    # run unit tests only
+./scripts/dev.sh test    # run unit and UI tests
 ./scripts/dev.sh run     # compile and launch ClearView
 ```
 

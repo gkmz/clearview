@@ -2,6 +2,7 @@
 # ClearView local development helper.
 # Usage:
 #   ./scripts/dev.sh build   # compile Debug app
+#   ./scripts/dev.sh unit    # run unit tests only
 #   ./scripts/dev.sh test    # run unit/UI tests
 #   ./scripts/dev.sh run     # build Debug app, then launch it
 
@@ -38,6 +39,18 @@ case "$ACTION" in
       -derivedDataPath "$DERIVED" \
       -quiet \
       build
+    ;;
+
+  unit)
+    echo "==> Testing ${SCHEME} unit tests..."
+    xcodebuild \
+      -project "$PROJECT" \
+      -scheme "$SCHEME" \
+      -destination "$DESTINATION" \
+      -derivedDataPath "$DERIVED" \
+      -only-testing:ClearViewTests \
+      -quiet \
+      test
     ;;
 
   test)

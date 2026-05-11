@@ -119,7 +119,8 @@ ClearView 是一款极简的 macOS 菜单栏护眼应用，帮助你通过周期
 
 ```bash
 ./scripts/dev.sh build   # 编译 Debug 应用
-./scripts/dev.sh test    # 运行测试
+./scripts/dev.sh unit    # 只运行单元测试
+./scripts/dev.sh test    # 运行单元测试和 UI 测试
 ./scripts/dev.sh run     # 编译并启动 ClearView
 ```
 

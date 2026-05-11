@@ -94,7 +94,6 @@ final class AppState: ObservableObject {
     private let previewSeconds = 20
     private var pomodoroEyeBreakEnabled = true
     private var mergeEyeBreakThresholdSeconds: Int = 120
-    private var reminderEnabledBeforePreview = true
     private var breakCountdownTimer: Timer?
     private var mainPanel: MainPanelController?
     private var reminderPanel: ReminderPanelController?
@@ -530,8 +529,6 @@ final class AppState: ObservableObject {
 
     private func startReminderPreview() {
         guard reminderPhase == .none else { return }
-        reminderEnabledBeforePreview = reminderEnabled
-        reminderService.stop()
         isReminderPreview = true
         activeBreakKind = .eye
         reminderPhase = .resting
@@ -545,13 +542,14 @@ final class AppState: ObservableObject {
     }
 
     private func closeReminderPreview() {
-        let shouldResume = reminderEnabledBeforePreview
-        endReminderFlow()
+        reminderPhase = .none
         isReminderPreview = false
-        statusText = shouldResume ? "继续当前节奏" : "预览已关闭"
-        if shouldResume {
-            reminderService.start(configuration: rhythmConfiguration)
-        }
+        breakSecondsLeft = breakDurationSeconds
+        activeBreakKind = .eye
+        breakCountdownTimer?.invalidate()
+        breakCountdownTimer = nil
+        reminderPanel?.hide()
+        statusText = "预览已关闭"
     }
 
     private var rhythmConfiguration: RhythmConfiguration {

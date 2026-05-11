@@ -91,4 +91,19 @@ struct ClearViewTests {
         #expect(appState.secondsUntilBreak == appState.pomodoroFocusMinutes * 60)
     }
 
+    @Test @MainActor func testReminderPreviewDoesNotChangeMainCountdown() {
+        let appState = AppState()
+        appState.updateRhythmMode(.eyeCare)
+        appState.toggleReminder(false)
+        appState.updateInterval(45)
+        let secondsBeforePreview = appState.secondsUntilBreak
+        let reminderEnabledBeforePreview = appState.reminderEnabled
+
+        appState.triggerTestReminderNow()
+
+        #expect(appState.isReminderPreview)
+        #expect(appState.secondsUntilBreak == secondsBeforePreview)
+        #expect(appState.reminderEnabled == reminderEnabledBeforePreview)
+    }
+
 }
