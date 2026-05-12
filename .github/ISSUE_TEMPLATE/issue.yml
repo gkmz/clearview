@@ -1,0 +1,77 @@
+name: Issue
+description: Report a bug, request a small improvement, or record a release/docs task.
+title: "[Type] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve ClearView. Keep it short and concrete.
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type
+      description: Choose the closest category.
+      options:
+        - Bug
+        - Improvement
+        - New idea
+        - Docs / release
+        - Maintenance
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Which part of ClearView is affected?
+      options:
+        - Reminder
+        - Rhythm
+        - Settings
+        - Shortcuts
+        - Distribution
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: Keep this practical. Most issues should be P2 or P3.
+      options:
+        - P1 - Core flow broken
+        - P2 - Noticeable user experience issue
+        - P3 - Nice to improve
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What happened, or what feels unclear?
+      placeholder: "Example: In Pomodoro mode, the reminder button cannot be clicked after the eye-relax guide."
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What should happen instead?
+      placeholder: "Example: After 20 seconds, Continue should be available."
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Screenshots, version, logs, or extra context.
+      placeholder: "ClearView version, macOS version, screenshot, or related issue."
+    validations:
+      required: false

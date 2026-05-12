@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Release notes
+    url: https://github.com/hank-mo/clearview/blob/main/docs/CHANGELOG.md
+    about: Check recent changes before opening a new issue.
