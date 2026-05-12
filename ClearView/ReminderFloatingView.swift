@@ -38,19 +38,18 @@ struct ReminderFloatingView: View {
     }
 
     private var bannerContent: some View {
-        HStack(spacing: 10) {
+        HStack(alignment: .center, spacing: 12) {
             StableText("\(appState.breakSecondsLeft)", size: 24, weight: .bold, alpha: 0.94, usesMonospacedDigit: true)
                 .frame(width: 46, height: 34)
 
             VStack(alignment: .leading, spacing: 2) {
-                titleView
+                bannerTitleView
                 Text(messageText)
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(textSecondary)
                     .lineLimit(1)
             }
-
-            Spacer()
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             Button {
                 appState.snoozeBreak(minutes: 5)
@@ -72,13 +71,14 @@ struct ReminderFloatingView: View {
             } label: {
                 Image(systemName: appState.isReminderPreview ? "xmark" : "checkmark")
                     .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(textPrimary)
+                    .foregroundStyle(textPrimary.opacity(appState.canCompleteCurrentBreak ? 1 : 0.35))
                     .frame(width: 28, height: 28)
-                    .background(buttonFill.opacity(1.15))
+                    .background(buttonFill.opacity(appState.canCompleteCurrentBreak ? 1.15 : 0.42))
                     .clipShape(Circle())
             }
             .buttonStyle(.plain)
             .focusable(false)
+            .disabled(!appState.canCompleteCurrentBreak)
         }
         .padding(.horizontal, 14)
         .id(appState.reminderPhase)
@@ -110,7 +110,7 @@ struct ReminderFloatingView: View {
 
                 floatingIconButton(
                     systemName: appState.isReminderPreview ? "xmark" : "play.fill",
-                    isDisabled: !appState.isReminderPreview && appState.reminderPhase != .completed
+                    isDisabled: !appState.canCompleteCurrentBreak
                 ) {
                     appState.completeBreak()
                 }
@@ -177,6 +177,25 @@ struct ReminderFloatingView: View {
 
     private func titleTextView(_ text: String) -> some View {
         StableText(text, size: intensity.titleFontSize, weight: .semibold, alpha: 0.94)
+            .frame(height: intensity.titleFrameHeight)
+    }
+
+    private var bannerTitleView: some View {
+        let title: String
+        switch appState.reminderPhase {
+        case .preparing:
+            title = appState.activeBreakKind == .pomodoro
+                ? AppCopy.ReminderPopup.pomodoroPreparingTitle
+                : AppCopy.ReminderPopup.preparingTitle
+        case .pomodoroResting:
+            title = AppCopy.ReminderPopup.pomodoroRestingTitle
+        case .completed:
+            title = appState.isReminderPreview ? "预览结束" : AppCopy.ReminderPopup.completedTitle
+        default:
+            title = appState.isReminderPreview ? "提醒预览" : AppCopy.ReminderPopup.restingTitle
+        }
+
+        return StableText(title, size: intensity.titleFontSize, weight: .semibold, alpha: 0.94, alignment: .left)
             .frame(height: intensity.titleFrameHeight)
     }
 

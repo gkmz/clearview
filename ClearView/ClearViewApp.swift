@@ -88,6 +88,22 @@ final class AppState: ObservableObject {
     @Published var activeBreakKind: RhythmBreakKind = .eye
     @Published var isReminderPreview = false
 
+    var canCompleteCurrentBreak: Bool {
+        if isReminderPreview || reminderPhase == .completed {
+            return true
+        }
+        guard reminderPhase == .resting || reminderPhase == .pomodoroResting else {
+            return false
+        }
+
+        let totalBreakSeconds = activeBreakKind == .pomodoro
+            ? max(1, pomodoroBreakMinutes) * 60
+            : max(5, breakDurationSeconds)
+        let minimumEyeRelaxSeconds = min(20, totalBreakSeconds)
+        let elapsedSeconds = max(0, totalBreakSeconds - breakSecondsLeft)
+        return elapsedSeconds >= minimumEyeRelaxSeconds
+    }
+
     let reminderService = ReminderService()
     let blueLightService = BlueLightFilterService()
     private let shortcutManager = GlobalShortcutManager.shared

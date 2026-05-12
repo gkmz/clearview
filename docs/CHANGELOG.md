@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-05-12
+
+### Fixed
+- Fixed text alignment in the light reminder banner so the title and message align consistently.
+- Unified the reminder continue button behavior across reminder intensity levels.
+- Pomodoro rest can now continue after the first 20 seconds of eye-relax guidance instead of forcing the full rest timer.
+
 ## [0.2.0] - 2026-05-11
 
 ### Added

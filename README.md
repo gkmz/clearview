@@ -10,7 +10,7 @@ English | [简体中文](README.zh-CN.md)
 
 ClearView is a very minimalist macOS app that helps users maintain healthier screen-time rhythms with periodic eye-break reminders and blue-light filter controls.
 
-> Current version: `0.2.0` (`release`)
+> Current version: `0.2.1` (`release`)
 
 ## Table of Contents
 - [ClearView](#clearview)
@@ -180,7 +180,7 @@ ClearView/
 
 ## Configuration and Data
 - User settings are stored locally in `UserDefaults`.
-- No account system, cloud sync, or telemetry in `v0.2.0`.
+- No account system, cloud sync, or telemetry in `v0.2.1`.
 - Shortcut and UI preference migrations are handled in `AppSettingsStore`.
 
 ## Troubleshooting
@@ -208,7 +208,7 @@ If you discover a vulnerability, please follow [SECURITY.md](SECURITY.md) and re
 ## Privacy
 - No account system.
 - No cloud sync.
-- No telemetry in `v0.2.0`.
+- No telemetry in `v0.2.1`.
 
 ## Screens
 

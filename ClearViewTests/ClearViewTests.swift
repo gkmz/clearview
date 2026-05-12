@@ -136,4 +136,20 @@ struct ClearViewTests {
         #expect(appState.rhythmMode == .eyeCare)
     }
 
+    @Test @MainActor func breakCanContinueAfterMinimumEyeRelaxTime() {
+        let appState = AppState()
+        appState.activeBreakKind = .pomodoro
+        appState.pomodoroBreakMinutes = 5
+        appState.reminderPhase = .pomodoroResting
+        appState.breakSecondsLeft = 281
+
+        #expect(appState.canCompleteCurrentBreak == false)
+
+        appState.breakSecondsLeft = 280
+        #expect(appState.canCompleteCurrentBreak == true)
+
+        appState.reminderPhase = .preparing
+        #expect(appState.canCompleteCurrentBreak == false)
+    }
+
 }
