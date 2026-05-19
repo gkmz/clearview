@@ -104,8 +104,8 @@ final class AppState: ObservableObject {
         return elapsedSeconds >= minimumEyeRelaxSeconds
     }
 
-    let reminderService = ReminderService()
-    let blueLightService = BlueLightFilterService()
+    private let reminderService = ReminderService()
+    private let blueLightService: BlueLightFiltering
     private let shortcutManager = GlobalShortcutManager.shared
     private let settingsStore = AppSettingsStore()
     private let preparationSeconds = 5
@@ -113,13 +113,20 @@ final class AppState: ObservableObject {
     private var pomodoroEyeBreakEnabled = true
     private var mergeEyeBreakThresholdSeconds: Int = 120
     private var breakCountdownTimer: Timer?
+    private var displayNotificationObservers = [NSObjectProtocol]()
     private var mainPanel: MainPanelController?
     private var reminderPanel: ReminderPanelController?
     private var settingsPanel: SettingsPanelController?
     private var aboutPanel: AboutPanelController?
 
-    init() {
+    convenience init() {
+        self.init(blueLightService: BlueLightFilterService())
+    }
+
+    init(blueLightService: BlueLightFiltering) {
+        self.blueLightService = blueLightService
         loadSettings()
+        registerForDisplayNotifications()
 
         reminderService.onTick = { [weak self] tick in
             guard let self else { return }
@@ -750,6 +757,39 @@ final class AppState: ObservableObject {
         breakSecondsLeft = breakDurationSeconds
 
         // 启动时恢复上次蓝光档位，让视觉状态连续。
+        blueLightService.apply(level: filterLevel)
+    }
+
+    private func registerForDisplayNotifications() {
+        let defaultCenter = NotificationCenter.default
+        displayNotificationObservers.append(
+            defaultCenter.addObserver(
+                forName: NSApplication.didChangeScreenParametersNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                guard let self = self else { return }
+                Task { @MainActor in
+                    self.reapplyCurrentBlueLightFilter()
+                }
+            }
+        )
+
+        displayNotificationObservers.append(
+            NSWorkspace.shared.notificationCenter.addObserver(
+                forName: NSWorkspace.screensDidWakeNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                guard let self = self else { return }
+                Task { @MainActor in
+                    self.reapplyCurrentBlueLightFilter()
+                }
+            }
+        )
+    }
+
+    private func reapplyCurrentBlueLightFilter() {
         blueLightService.apply(level: filterLevel)
     }
 

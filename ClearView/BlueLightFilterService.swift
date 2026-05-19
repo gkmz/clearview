@@ -26,7 +26,11 @@ enum BlueLightLevel: CaseIterable {
     }
 }
 
-final class BlueLightFilterService {
+protocol BlueLightFiltering {
+    func apply(level: BlueLightLevel)
+}
+
+final class BlueLightFilterService: BlueLightFiltering {
     func apply(level: BlueLightLevel) {
         switch level {
         case .off:
