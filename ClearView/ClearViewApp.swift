@@ -63,6 +63,8 @@ final class AppState: ObservableObject {
     @Published var secondsUntilBreak: Int = 20 * 60
     @Published var filterLevel: BlueLightLevel = .off
     @Published var useBackgroundImage = true
+    @Published var backgroundImageMode: BackgroundImageMode = .system
+    @Published var fixedBackgroundIsDark = false
     @Published var playBreakFinishedSound = false
     @Published var shortcutKeyCode: UInt16 = 49
     @Published var shortcutModifierFlagsRaw: UInt = 1_179_648
@@ -82,7 +84,6 @@ final class AppState: ObservableObject {
     @Published var reminderIntensity: ReminderIntensityLevel = .medium
     @Published var launchAtLoginEnabled = false
     @Published var startTimerOnLaunch = true
-    @Published var statusText: String = "陪你护眼"
     @Published var reminderPhase: ReminderPhase = .none
     @Published var breakSecondsLeft: Int = 20
     @Published var activeBreakKind: RhythmBreakKind = .eye
@@ -150,7 +151,7 @@ final class AppState: ObservableObject {
             reminderService.stop()
         }
         // 应用启动时集中注册所有全局快捷键，若任一失败立即反馈给用户。
-        let mainPanelShortcutRegistered = shortcutManager.configure(
+        _ = shortcutManager.configure(
             action: .toggleMainPanel,
             keyCode: shortcutKeyCode,
             modifierFlagsRaw: shortcutModifierFlagsRaw
@@ -159,7 +160,7 @@ final class AppState: ObservableObject {
                 self?.toggleMainPanel()
             }
         }
-        let reminderToggleShortcutRegistered = shortcutManager.configure(
+        _ = shortcutManager.configure(
             action: .toggleReminder,
             keyCode: reminderToggleShortcutKeyCode,
             modifierFlagsRaw: reminderToggleShortcutModifierFlagsRaw
@@ -169,7 +170,7 @@ final class AppState: ObservableObject {
                 self.toggleReminderFromShortcut()
             }
         }
-        let cycleFilterShortcutRegistered = shortcutManager.configure(
+        _ = shortcutManager.configure(
             action: .cycleBlueLightLevel,
             keyCode: cycleFilterShortcutKeyCode,
             modifierFlagsRaw: cycleFilterShortcutModifierFlagsRaw
@@ -178,7 +179,7 @@ final class AppState: ObservableObject {
                 self?.cycleBlueLightLevel()
             }
         }
-        let snoozeReminderShortcutRegistered = shortcutManager.configure(
+        _ = shortcutManager.configure(
             action: .snoozeReminder,
             keyCode: snoozeReminderShortcutKeyCode,
             modifierFlagsRaw: snoozeReminderShortcutModifierFlagsRaw
@@ -187,7 +188,7 @@ final class AppState: ObservableObject {
                 self?.snoozeReminderFromShortcut()
             }
         }
-        let rhythmShortcutRegistered = shortcutManager.configure(
+        _ = shortcutManager.configure(
             action: .toggleRhythmMode,
             keyCode: toggleRhythmShortcutKeyCode,
             modifierFlagsRaw: toggleRhythmShortcutModifierFlagsRaw
@@ -196,17 +197,7 @@ final class AppState: ObservableObject {
                 self?.toggleRhythmMode()
             }
         }
-        if !mainPanelShortcutRegistered {
-            statusText = "主界面快捷键注册失败，请在设置中重新选择"
-        } else if !reminderToggleShortcutRegistered {
-            statusText = "暂停提醒快捷键注册失败，请在设置中重新选择"
-        } else if !cycleFilterShortcutRegistered {
-            statusText = "护眼模式快捷键注册失败，请在设置中重新选择"
-        } else if !snoozeReminderShortcutRegistered {
-            statusText = "稍后提醒快捷键注册失败，请在设置中重新选择"
-        } else if !rhythmShortcutRegistered {
-            statusText = "节奏快捷键注册失败，请在设置中重新选择"
-        }
+        // 快捷键注册失败仍保留原有回滚逻辑；错误应由设置界面的可见反馈承载。
         mainPanel = MainPanelController(appState: self)
         reminderPanel = ReminderPanelController(appState: self)
         settingsPanel = SettingsPanelController(appState: self)
@@ -255,10 +246,8 @@ final class AppState: ObservableObject {
         reminderEnabled = enabled
         if enabled {
             reminderService.resume(configuration: rhythmConfiguration)
-            statusText = "继续当前计时"
         } else {
             reminderService.stop()
-            statusText = "先不打扰"
         }
         persistSettings()
     }
@@ -284,7 +273,6 @@ final class AppState: ObservableObject {
         workIntervalMinutes = max(1, minutes)
         if reminderEnabled {
             reminderService.start(configuration: rhythmConfiguration)
-            statusText = "节奏已调整"
         }
         persistSettings()
     }
@@ -292,14 +280,12 @@ final class AppState: ObservableObject {
     func updateBreakDuration(_ seconds: Int) {
         breakDurationSeconds = max(5, seconds)
         breakSecondsLeft = breakDurationSeconds
-        statusText = "休息时间已调整"
         persistSettings()
     }
 
     func updateRhythmMode(_ mode: RhythmMode) {
         guard rhythmMode != mode else { return }
         rhythmMode = mode
-        statusText = mode == .eyeCare ? "已切换到护眼，重新开始倒计时" : "已切换到番茄，开始新一轮专注"
         if reminderEnabled {
             reminderService.start(configuration: rhythmConfiguration)
         } else {
@@ -315,7 +301,6 @@ final class AppState: ObservableObject {
 
     func updatePomodoroFocus(_ minutes: Int) {
         pomodoroFocusMinutes = max(1, minutes)
-        statusText = "专注时间已调整"
         if reminderEnabled, rhythmMode == .pomodoro {
             reminderService.start(configuration: rhythmConfiguration)
         }
@@ -324,14 +309,12 @@ final class AppState: ObservableObject {
 
     func updatePomodoroBreak(_ minutes: Int) {
         pomodoroBreakMinutes = max(1, minutes)
-        statusText = "番茄休息已调整"
         persistSettings()
     }
 
     func resetReminderTimer() {
         reminderEnabled = false
         reminderService.reset(configuration: rhythmConfiguration)
-        statusText = "重新开始"
         persistSettings()
     }
 
@@ -339,7 +322,6 @@ final class AppState: ObservableObject {
         filterLevel = level
         // 蓝光档位切换时立即应用到所有可用显示器。
         blueLightService.apply(level: level)
-        statusText = "护眼：\(level.title)"
         persistSettings()
     }
 
@@ -349,13 +331,23 @@ final class AppState: ObservableObject {
         if !enabled {
             mainWindowOpacity = normalizedMainWindowOpacity(mainWindowOpacity, useBackgroundImage: false)
         }
-        statusText = enabled ? "背景图片已启用" : "背景图片已关闭"
+        persistSettings()
+    }
+
+    /// 更新背景图片模式；模式只影响背景图，不会自动修改蓝光过滤档位。
+    func updateBackgroundImageMode(_ mode: BackgroundImageMode) {
+        backgroundImageMode = mode
+        persistSettings()
+    }
+
+    /// 更新固定背景的昼夜选择。
+    func updateFixedBackgroundIsDark(_ isDark: Bool) {
+        fixedBackgroundIsDark = isDark
         persistSettings()
     }
 
     func updateBreakFinishedSoundEnabled(_ enabled: Bool) {
         playBreakFinishedSound = enabled
-        statusText = enabled ? "结束提示音已启用" : "结束提示音已关闭"
         persistSettings()
     }
 
@@ -367,17 +359,14 @@ final class AppState: ObservableObject {
                 try SMAppService.mainApp.unregister()
             }
             launchAtLoginEnabled = enabled
-            statusText = enabled ? "已开启开机启动" : "已关闭开机启动"
             persistSettings()
         } catch {
             launchAtLoginEnabled = SMAppService.mainApp.status == .enabled
-            statusText = "开机启动设置失败"
         }
     }
 
     func updateStartTimerOnLaunch(_ enabled: Bool) {
         startTimerOnLaunch = enabled
-        statusText = enabled ? "启动后自动计时" : "启动后保持暂停"
         persistSettings()
     }
 
@@ -386,7 +375,6 @@ final class AppState: ObservableObject {
         let flags = NSEvent.ModifierFlags(rawValue: modifierFlagsRaw)
             .intersection([.command, .shift, .option, .control])
         guard !flags.isEmpty || GlobalShortcutManager.isFunctionKey(keyCode) else {
-            statusText = "普通按键需配合修饰键"
             return
         }
 
@@ -394,14 +382,12 @@ final class AppState: ObservableObject {
         let oldBinding = binding(for: action)
 
         if hasInternalConflict(for: action, binding: normalizedBinding) {
-            statusText = "该快捷键已被应用内其他功能使用"
             return
         }
 
         setBinding(normalizedBinding, for: action)
         let success = shortcutManager.updateShortcut(action: action, keyCode: keyCode, modifierFlagsRaw: flags.rawValue)
         if success {
-            statusText = "快捷键已更新"
         } else {
             setBinding(oldBinding, for: action)
             _ = shortcutManager.updateShortcut(
@@ -409,7 +395,6 @@ final class AppState: ObservableObject {
                 keyCode: oldBinding.keyCode,
                 modifierFlagsRaw: oldBinding.modifierFlagsRaw
             )
-            statusText = "快捷键被系统占用，请换一组组合键"
         }
         persistSettings()
     }
@@ -471,27 +456,23 @@ final class AppState: ObservableObject {
     func updateMainWindowOpacity(_ value: Double) {
         // 有背景图时允许底色完全透明；无背景图时保留最低底色保证可读性。
         mainWindowOpacity = normalizedMainWindowOpacity(value, useBackgroundImage: useBackgroundImage)
-        statusText = "主界面透明度已调整"
         persistSettings()
     }
 
     func updateBackgroundImageOpacity(_ value: Double) {
         backgroundImageOpacity = min(max(value, 0.25), 1.0)
-        statusText = "背景图透明度已调整"
         persistSettings()
     }
 
     func updateReminderWindowOpacity(_ value: Double) {
         // 提示窗透明度单独可调，兼顾提醒可见性与通透感。
         reminderWindowOpacity = min(max(value, 0.25), 1.0)
-        statusText = "提示窗透明度已调整"
         persistSettings()
     }
 
     func updateReminderIntensity(_ level: ReminderIntensityLevel) {
         let oldLevel = reminderIntensity
         reminderIntensity = level
-        statusText = "提醒方式：\(level.shortTitle)"
         persistSettings()
         // 提醒方式切换可能在横幅与大浮窗之间变化，需按新方式重新定位，避免从右上角放大后超出屏幕。
         reminderPanel?.syncReminderPanelGeometryIfVisible(reposition: oldLevel != level)
@@ -500,7 +481,6 @@ final class AppState: ObservableObject {
     func updateSettingsWindowOpacity(_ value: Double) {
         // 设置窗和关于窗共用同一透明度，保持辅助面板视觉一致。
         settingsWindowOpacity = min(max(value, 0.25), 1.0)
-        statusText = "设置/关于窗透明度已调整"
         persistSettings()
     }
 
@@ -520,7 +500,6 @@ final class AppState: ObservableObject {
 
     func triggerTestReminder(after seconds: Int) {
         let safeSeconds = max(1, seconds)
-        statusText = "\(safeSeconds)秒后预览提醒"
         DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(safeSeconds)) { [weak self] in
             guard let self else { return }
             Task { @MainActor in
@@ -530,6 +509,11 @@ final class AppState: ObservableObject {
         }
     }
 
+    /// 仅供单元测试推进提醒计时，避免测试突破服务的访问边界。
+    func advanceReminderOneSecondForTesting() {
+        reminderService.advanceOneSecondForTesting()
+    }
+
     func completeBreak() {
         if isReminderPreview {
             closeReminderPreview()
@@ -537,9 +521,7 @@ final class AppState: ObservableObject {
         }
 
         reminderEnabled = true
-        let completedBreakKind = activeBreakKind
         endReminderFlow()
-        statusText = completedBreakKind == .pomodoro ? AppCopy.Status.pomodoroFinished : AppCopy.Status.finished
         reminderService.completeBreak()
         persistSettings()
     }
@@ -548,7 +530,6 @@ final class AppState: ObservableObject {
         // 关键流程：用户点击“稍后/跳过”后会继续进入工作倒计时，按钮状态也必须回到“运行中”。
         reminderEnabled = true
         endReminderFlow()
-        statusText = "先继续也可以"
         reminderService.skipBreak()
         persistSettings()
     }
@@ -561,7 +542,6 @@ final class AppState: ObservableObject {
         // 关键流程：延迟提醒会恢复主倒计时，需同步开启 reminderEnabled，避免主界面仍显示“开始”按钮。
         reminderEnabled = true
         endReminderFlow()
-        statusText = "\(minutes)分钟后再提醒"
         reminderService.snooze(minutes: minutes)
         persistSettings()
     }
@@ -578,7 +558,6 @@ final class AppState: ObservableObject {
         activeBreakKind = .eye
         reminderPhase = .resting
         breakSecondsLeft = previewSeconds
-        statusText = "预览提醒"
         if reminderIntensity != .light {
             NSApplication.shared.activate(ignoringOtherApps: true)
         }
@@ -594,7 +573,6 @@ final class AppState: ObservableObject {
         breakCountdownTimer?.invalidate()
         breakCountdownTimer = nil
         reminderPanel?.hide()
-        statusText = "预览已关闭"
     }
 
     private var rhythmConfiguration: RhythmConfiguration {
@@ -616,7 +594,6 @@ final class AppState: ObservableObject {
         // 先给用户 5 秒反应时间，再进入正式休息倒计时。
         reminderPhase = .preparing
         breakSecondsLeft = preparationSeconds
-        statusText = kind == .pomodoro ? AppCopy.Status.pomodoroPreparing : AppCopy.Status.preparing
         NSApplication.shared.activate(ignoringOtherApps: true)
         reminderPanel?.show()
         startPreparationCountdown()
@@ -632,9 +609,6 @@ final class AppState: ObservableObject {
                 if self.breakSecondsLeft <= 0 {
                     self.reminderPhase = self.activeBreakKind == .pomodoro ? .pomodoroResting : .resting
                     self.breakSecondsLeft = self.activeBreakKind == .pomodoro ? self.pomodoroBreakMinutes * 60 : self.breakDurationSeconds
-                    self.statusText = self.activeBreakKind == .pomodoro
-                        ? AppCopy.Status.pomodoroResting
-                        : AppCopy.Status.resting
                     self.reminderPanel?.refresh()
                     self.breakCountdownTimer?.invalidate()
                     self.breakCountdownTimer = nil
@@ -661,9 +635,6 @@ final class AppState: ObservableObject {
                     // 休息倒计时结束后不自动关闭浮窗，等待用户点击继续按钮。
                     self.reminderPhase = .completed
                     self.breakSecondsLeft = 0
-                    self.statusText = self.activeBreakKind == .pomodoro
-                        ? AppCopy.Status.pomodoroCompleted
-                        : AppCopy.Status.completed
                     self.reminderPanel?.refresh()
                     if self.playBreakFinishedSound {
                         // 用户可能正在看远方，结束时可选用短促声音温柔提醒可以回来了。
@@ -692,7 +663,6 @@ final class AppState: ObservableObject {
                 if self.breakSecondsLeft <= 0 {
                     self.reminderPhase = .completed
                     self.breakSecondsLeft = 0
-                    self.statusText = "预览结束"
                     self.reminderPanel?.refresh()
                     self.breakCountdownTimer?.invalidate()
                     self.breakCountdownTimer = nil
@@ -732,6 +702,8 @@ final class AppState: ObservableObject {
         mergeEyeBreakThresholdSeconds = max(0, settings.mergeEyeBreakThresholdSeconds)
         filterLevel = BlueLightLevel.fromSettingsKey(settings.filterLevelKey)
         useBackgroundImage = settings.useBackgroundImage
+        backgroundImageMode = BackgroundImageMode(rawValue: settings.backgroundImageModeKey) ?? .system
+        fixedBackgroundIsDark = settings.fixedBackgroundIsDark
         playBreakFinishedSound = settings.playBreakFinishedSound
         // 新字段优先，旧字段只作为解码阶段的回退；这里统一使用新字段赋值到运行时状态。
         shortcutKeyCode = settings.shortcutToggleMainPanelKeyCode
@@ -812,6 +784,8 @@ final class AppState: ObservableObject {
             mergeEyeBreakThresholdSeconds: mergeEyeBreakThresholdSeconds,
             filterLevelKey: filterLevel.settingsKey,
             useBackgroundImage: useBackgroundImage,
+            backgroundImageModeKey: backgroundImageMode.rawValue,
+            fixedBackgroundIsDark: fixedBackgroundIsDark,
             playBreakFinishedSound: playBreakFinishedSound,
             shortcutKeyCode: shortcutKeyCode,
             shortcutModifierFlagsRaw: shortcutModifierFlagsRaw,

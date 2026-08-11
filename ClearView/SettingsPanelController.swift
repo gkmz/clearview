@@ -258,6 +258,8 @@ private struct SettingsPanelView: View {
                     )
                 }
 
+                backgroundModeRow
+
                 if appState.useBackgroundImage {
                     opacitySettingRow(
                         title: "背景图透明度",
@@ -379,6 +381,55 @@ private struct SettingsPanelView: View {
         .onTapGesture {
             if !isExpanded.wrappedValue {
                 toggleSection()
+            }
+        }
+    }
+
+    /// 提供三种简短背景策略，固定模式下再选择白天或夜晚资源。
+    private var backgroundModeRow: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("背景切换")
+                .font(.caption)
+                .foregroundStyle(textSecondary)
+
+            HStack(spacing: 4) {
+                ForEach(BackgroundImageMode.allCases, id: \.self) { mode in
+                    let isSelected = appState.backgroundImageMode == mode
+                    Button {
+                        appState.updateBackgroundImageMode(mode)
+                    } label: {
+                        Text(mode.title)
+                            .font(.caption.weight(isSelected ? .bold : .semibold))
+                            .frame(maxWidth: .infinity, minHeight: 30)
+                            .foregroundStyle(isSelected ? Color.white : textPrimary)
+                            .background(isSelected ? Color.white.opacity(isDark ? 0.30 : 0.26) : Color.clear)
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .focusable(false)
+                }
+            }
+            .padding(4)
+            .background(Color.white.opacity(0.075))
+            .clipShape(Capsule(style: .continuous))
+            .overlay(Capsule(style: .continuous).stroke(Color.white.opacity(0.14), lineWidth: 1))
+
+            if appState.backgroundImageMode == .fixed {
+                HStack(spacing: 8) {
+                    Text("固定背景")
+                        .font(.caption)
+                        .foregroundStyle(textPrimary)
+                    Spacer()
+                    Picker("固定背景", selection: Binding(
+                        get: { appState.fixedBackgroundIsDark },
+                        set: { appState.updateFixedBackgroundIsDark($0) }
+                    )) {
+                        Text("白天").tag(false)
+                        Text("夜晚").tag(true)
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(width: 120)
+                }
             }
         }
     }

@@ -32,8 +32,18 @@ struct ContentView: View {
         static let functionHeight: CGFloat = 58
     }
 
-    // 背景图片仍按系统深浅色切换，但 UI 基底统一为黑色玻璃风格。
+    // 系统主题只负责控件对比度；背景图片按照用户选择的背景模式独立决定。
     private var isDark: Bool { colorScheme == .dark }
+    private var backgroundIsDark: Bool {
+        switch appState.backgroundImageMode {
+        case .system:
+            return isDark
+        case .schedule:
+            return TimeContext.current() == .evening || TimeContext.current() == .lateNight
+        case .fixed:
+            return appState.fixedBackgroundIsDark
+        }
+    }
     private var mainOpacity: Double { appState.mainWindowOpacity }
     private var textPrimary: Color { Color.white.opacity(0.96) }
     private var textSecondary: Color { Color.white.opacity(0.78) }
@@ -110,7 +120,7 @@ struct ContentView: View {
         // 允许用户关闭背景图，直接回退为纯色背景，减少干扰。
         if appState.useBackgroundImage {
             // SwiftPM 资源中的图片用 Bundle.module 显式读取，避免名称解析失败。
-            if let url = Bundle.main.url(forResource: isDark ? "dark" : "light", withExtension: "jpg"),
+            if let url = Bundle.main.url(forResource: backgroundIsDark ? "dark" : "light", withExtension: "jpg"),
                let image = NSImage(contentsOf: url) {
                 Image(nsImage: image)
                     .resizable()
@@ -276,6 +286,55 @@ struct ContentView: View {
                         .buttonStyle(.plain)
                         .hoverTooltip("选择\(level.title)")
                     }
+                }
+
+            }
+        }
+    }
+
+    private var backgroundModeRow: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("背景切换")
+                .font(.caption)
+                .foregroundStyle(textSecondary)
+
+            HStack(spacing: 4) {
+                ForEach(BackgroundImageMode.allCases, id: \.self) { mode in
+                    let isSelected = appState.backgroundImageMode == mode
+                    Button {
+                        appState.updateBackgroundImageMode(mode)
+                    } label: {
+                        Text(mode.title)
+                            .font(.caption.weight(isSelected ? .bold : .semibold))
+                            .frame(maxWidth: .infinity, minHeight: 30)
+                            .foregroundStyle(isSelected ? Color.white : textPrimary)
+                            .background(isSelected ? Color.white.opacity(isDark ? 0.30 : 0.26) : Color.clear)
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .focusable(false)
+                }
+            }
+            .padding(4)
+            .background(Color.white.opacity(0.075))
+            .clipShape(Capsule(style: .continuous))
+            .overlay(Capsule(style: .continuous).stroke(Color.white.opacity(0.14), lineWidth: 1))
+
+            if appState.backgroundImageMode == .fixed {
+                HStack(spacing: 8) {
+                    Text("固定背景")
+                        .font(.caption)
+                        .foregroundStyle(textPrimary)
+                    Spacer()
+                    Picker("固定背景", selection: Binding(
+                        get: { appState.fixedBackgroundIsDark },
+                        set: { appState.updateFixedBackgroundIsDark($0) }
+                    )) {
+                        Text("白天").tag(false)
+                        Text("夜晚").tag(true)
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(width: 120)
                 }
             }
         }
@@ -464,6 +523,8 @@ struct ContentView: View {
                         )
                     )
                 }
+
+                backgroundModeRow
 
                 if appState.useBackgroundImage {
                     opacitySettingRow(
@@ -977,21 +1038,7 @@ struct ContentView: View {
         return formatter.string(from: date)
     }
 
-    private var greetingText: String {
-        let hour = Calendar.current.component(.hour, from: now)
-        switch hour {
-        case 5..<11:
-            return "早上好，记得照顾眼睛"
-        case 11..<14:
-            return "中午好，给眼睛一点空隙"
-        case 14..<18:
-            return "下午好，别忘了看远方"
-        case 18..<23:
-            return "晚上好，屏幕可以柔和一点"
-        default:
-            return "夜深了，让眼睛慢慢休息"
-        }
-    }
+    private var greetingText: String { TimeContext.current(date: now).greeting }
 }
 
 private struct GlassButtonModifier: ViewModifier {

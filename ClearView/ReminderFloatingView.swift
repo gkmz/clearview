@@ -159,19 +159,28 @@ struct ReminderFloatingView: View {
 
     @ViewBuilder
     private var titleView: some View {
+        let context = TimeContext.current()
         switch appState.reminderPhase {
         case .preparing:
             titleTextView(
-                appState.activeBreakKind == .pomodoro
+                context == .lateNight && !appState.isReminderPreview
+                    ? context.lateNightPreparingTitle
+                    : appState.activeBreakKind == .pomodoro
                     ? AppCopy.ReminderPopup.pomodoroPreparingTitle
                     : AppCopy.ReminderPopup.preparingTitle
             )
         case .pomodoroResting:
-            titleTextView(AppCopy.ReminderPopup.pomodoroRestingTitle)
+            titleTextView(context == .lateNight ? context.restingTitle : AppCopy.ReminderPopup.pomodoroRestingTitle)
         case .completed:
-            titleTextView(appState.isReminderPreview ? "预览结束" : AppCopy.ReminderPopup.completedTitle)
+            titleTextView(
+                appState.isReminderPreview
+                    ? "预览结束"
+                    : context == .lateNight
+                    ? context.lateNightCompletedTitle
+                    : AppCopy.ReminderPopup.completedTitle
+            )
         default:
-            titleTextView(appState.isReminderPreview ? "提醒预览" : AppCopy.ReminderPopup.restingTitle)
+            titleTextView(appState.isReminderPreview ? "提醒预览" : context.restingTitle)
         }
     }
 
@@ -181,18 +190,25 @@ struct ReminderFloatingView: View {
     }
 
     private var bannerTitleView: some View {
+        let context = TimeContext.current()
         let title: String
         switch appState.reminderPhase {
         case .preparing:
-            title = appState.activeBreakKind == .pomodoro
+            title = context == .lateNight && !appState.isReminderPreview
+                ? context.lateNightPreparingTitle
+                : appState.activeBreakKind == .pomodoro
                 ? AppCopy.ReminderPopup.pomodoroPreparingTitle
                 : AppCopy.ReminderPopup.preparingTitle
         case .pomodoroResting:
-            title = AppCopy.ReminderPopup.pomodoroRestingTitle
+            title = context == .lateNight ? context.restingTitle : AppCopy.ReminderPopup.pomodoroRestingTitle
         case .completed:
-            title = appState.isReminderPreview ? "预览结束" : AppCopy.ReminderPopup.completedTitle
+            title = appState.isReminderPreview
+                ? "预览结束"
+                : context == .lateNight
+                ? context.lateNightCompletedTitle
+                : AppCopy.ReminderPopup.completedTitle
         default:
-            title = appState.isReminderPreview ? "提醒预览" : AppCopy.ReminderPopup.restingTitle
+            title = appState.isReminderPreview ? "提醒预览" : context.restingTitle
         }
 
         return StableText(title, size: intensity.titleFontSize, weight: .semibold, alpha: 0.94, alignment: .left)
@@ -200,16 +216,22 @@ struct ReminderFloatingView: View {
     }
 
     private var messageText: String {
+        let context = TimeContext.current()
         switch appState.reminderPhase {
         case .preparing:
-            return appState.activeBreakKind == .pomodoro
+            return context == .lateNight && !appState.isReminderPreview
+                ? context.lateNightPreparingMessage
+                : appState.activeBreakKind == .pomodoro
                 ? AppCopy.ReminderPopup.pomodoroPreparingMessage
                 : AppCopy.ReminderPopup.preparingMessage
         case .pomodoroResting:
-            return AppCopy.ReminderPopup.pomodoroRestingMessage
+            return context == .lateNight ? context.restingMessage : AppCopy.ReminderPopup.pomodoroRestingMessage
         case .completed:
             if appState.isReminderPreview {
                 return "预览不会改变当前节奏。"
+            }
+            if context == .lateNight {
+                return context.lateNightCompletedMessage
             }
             return appState.activeBreakKind == .pomodoro
                 ? AppCopy.ReminderPopup.pomodoroCompletedMessage
@@ -218,7 +240,7 @@ struct ReminderFloatingView: View {
             if appState.isReminderPreview {
                 return "这是 20 秒提示窗预览，可随时关闭。"
             }
-            return AppCopy.ReminderPopup.restingMessage
+            return context.restingMessage
         }
     }
 

@@ -30,14 +30,4 @@ enum AppCopy {
         static let pomodoroDoneHelp = "开始下一轮"
     }
 
-    enum Status {
-        static let preparing = "准备放松眼睛"
-        static let resting = "看看远方吧"
-        static let pomodoroPreparing = "准备番茄休息"
-        static let pomodoroResting = "番茄休息中"
-        static let completed = "真棒，舒眼完成了"
-        static let pomodoroCompleted = "休息完成"
-        static let finished = "眼睛放松好了"
-        static let pomodoroFinished = "开始下一轮专注"
-    }
 }

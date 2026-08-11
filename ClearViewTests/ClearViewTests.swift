@@ -42,6 +42,24 @@ struct ClearViewTests {
         #expect(settings.startTimerOnLaunch == true)
         #expect(settings.shortcutToggleRhythmModeKeyCode == ShortcutAction.toggleRhythmMode.defaultBinding.keyCode)
         #expect(settings.shortcutToggleRhythmModeModifierFlagsRaw == ShortcutAction.toggleRhythmMode.defaultBinding.modifierFlagsRaw)
+        #expect(settings.backgroundImageModeKey == BackgroundImageMode.system.rawValue)
+        #expect(settings.fixedBackgroundIsDark == false)
+    }
+
+    @Test @MainActor func timeContextUsesWarmLateNightCopy() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 8 * 60 * 60)!
+        let date = calendar.date(from: DateComponents(year: 2026, month: 8, day: 11, hour: 1))!
+
+        let context = TimeContext.current(date: date, calendar: calendar)
+
+        #expect(context == .lateNight)
+        #expect(context.greeting.contains("早点休息"))
+        #expect(context.restingMessage.contains("早点睡"))
+    }
+
+    @Test func backgroundModesHaveConciseUserFacingTitles() {
+        #expect(BackgroundImageMode.allCases.map(\.title) == ["跟随系统", "按时间切换", "固定"])
     }
 
     @Test @MainActor func rhythmConfigurationKeepsPomodoroDefaultsDistinctFromEyeBreaks() {
@@ -113,7 +131,7 @@ struct ClearViewTests {
         appState.updateRhythmMode(.eyeCare)
         appState.toggleReminder(true)
         appState.updateInterval(20)
-        appState.reminderService.advanceOneSecondForTesting()
+        appState.advanceReminderOneSecondForTesting()
         await Task.yield()
         appState.toggleReminder(false)
         let pausedSeconds = appState.secondsUntilBreak

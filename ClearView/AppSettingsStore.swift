@@ -23,6 +23,21 @@ enum RhythmMode: String, CaseIterable, Codable, Equatable {
     var settingsKey: String { rawValue }
 }
 
+/// 主界面背景的选择方式；蓝光过滤保持独立，由用户手动控制。
+enum BackgroundImageMode: String, CaseIterable, Codable, Equatable {
+    case system
+    case schedule
+    case fixed
+
+    var title: String {
+        switch self {
+        case .system: return "跟随系统"
+        case .schedule: return "按时间切换"
+        case .fixed: return "固定"
+        }
+    }
+}
+
 /// 提醒方式控制打断程度：温和不抢焦点，标准使用当前浮窗，严格减少跳过空间。
 enum ReminderIntensityLevel: String, CaseIterable, Codable, Equatable {
     case light
@@ -248,6 +263,8 @@ struct AppSettings: Codable {
     var mergeEyeBreakThresholdSeconds: Int
     var filterLevelKey: String
     var useBackgroundImage: Bool
+    var backgroundImageModeKey: String
+    var fixedBackgroundIsDark: Bool
     var playBreakFinishedSound: Bool
     // 兼容历史配置（单一主快捷键字段），迁移期保留，避免老用户升级后丢失快捷键。
     var shortcutKeyCode: UInt16
@@ -284,6 +301,8 @@ struct AppSettings: Codable {
         mergeEyeBreakThresholdSeconds: 120,
         filterLevelKey: "off",
         useBackgroundImage: true,
+        backgroundImageModeKey: BackgroundImageMode.system.rawValue,
+        fixedBackgroundIsDark: false,
         playBreakFinishedSound: false,
         shortcutKeyCode: ShortcutAction.toggleMainPanel.defaultBinding.keyCode,
         shortcutModifierFlagsRaw: ShortcutAction.toggleMainPanel.defaultBinding.modifierFlagsRaw,
@@ -319,6 +338,8 @@ struct AppSettings: Codable {
         case mergeEyeBreakThresholdSeconds
         case filterLevelKey
         case useBackgroundImage
+        case backgroundImageModeKey
+        case fixedBackgroundIsDark
         case playBreakFinishedSound
         case shortcutKeyCode
         case shortcutModifierFlagsRaw
@@ -354,6 +375,8 @@ struct AppSettings: Codable {
         mergeEyeBreakThresholdSeconds: Int,
         filterLevelKey: String,
         useBackgroundImage: Bool,
+        backgroundImageModeKey: String,
+        fixedBackgroundIsDark: Bool,
         playBreakFinishedSound: Bool,
         shortcutKeyCode: UInt16,
         shortcutModifierFlagsRaw: UInt,
@@ -387,6 +410,8 @@ struct AppSettings: Codable {
         self.mergeEyeBreakThresholdSeconds = mergeEyeBreakThresholdSeconds
         self.filterLevelKey = filterLevelKey
         self.useBackgroundImage = useBackgroundImage
+        self.backgroundImageModeKey = backgroundImageModeKey
+        self.fixedBackgroundIsDark = fixedBackgroundIsDark
         self.playBreakFinishedSound = playBreakFinishedSound
         self.shortcutKeyCode = shortcutKeyCode
         self.shortcutModifierFlagsRaw = shortcutModifierFlagsRaw
@@ -426,6 +451,8 @@ struct AppSettings: Codable {
         mergeEyeBreakThresholdSeconds = try container.decodeIfPresent(Int.self, forKey: .mergeEyeBreakThresholdSeconds) ?? defaults.mergeEyeBreakThresholdSeconds
         filterLevelKey = try container.decodeIfPresent(String.self, forKey: .filterLevelKey) ?? defaults.filterLevelKey
         useBackgroundImage = try container.decodeIfPresent(Bool.self, forKey: .useBackgroundImage) ?? defaults.useBackgroundImage
+        backgroundImageModeKey = try container.decodeIfPresent(String.self, forKey: .backgroundImageModeKey) ?? defaults.backgroundImageModeKey
+        fixedBackgroundIsDark = try container.decodeIfPresent(Bool.self, forKey: .fixedBackgroundIsDark) ?? defaults.fixedBackgroundIsDark
         playBreakFinishedSound = try container.decodeIfPresent(Bool.self, forKey: .playBreakFinishedSound) ?? defaults.playBreakFinishedSound
 
         // 关键流程：先读取旧字段，再作为新字段的回退值，保证历史版本平滑升级到多快捷键结构。
