@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-08-12
+
+### Changed
+- Synchronized the app, Xcode project, and documentation release version to `0.2.2`.
+
 ## [0.2.1] - 2026-05-12
 
 ### Fixed
