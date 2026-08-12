@@ -333,6 +333,7 @@ struct ContentView: View {
                         Text("白天").tag(false)
                         Text("夜晚").tag(true)
                     }
+                    .labelsHidden()
                     .pickerStyle(.segmented)
                     .frame(width: 120)
                 }
