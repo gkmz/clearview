@@ -354,6 +354,8 @@ struct ContentView: View {
                     }
                     .labelsHidden()
                     .pickerStyle(.segmented)
+                    // 设置面板始终使用深色承托，分段控件需保持白色文字以保证未选项可读。
+                    .colorScheme(.dark)
                     .frame(width: 120)
                 }
             }
