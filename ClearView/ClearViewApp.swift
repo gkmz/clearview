@@ -33,13 +33,18 @@ struct ClearViewApp: App {
             MenuBarView()
                 .environmentObject(appState)
         } label: {
-            if let image = menuBarTemplateIcon {
-                Image(nsImage: image)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 18, height: 18)
-            } else {
-                Label("ClearView", systemImage: "eye")
+            Group {
+                if let image = menuBarTemplateIcon {
+                    Image(nsImage: image)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 18, height: 18)
+                } else {
+                    Label("ClearView", systemImage: "eye")
+                }
+            }
+            .onAppear {
+                appState.showMainPanelOnLaunch()
             }
         }
     }
@@ -129,6 +134,7 @@ final class AppState: ObservableObject {
     private var reminderPanel: ReminderPanelController?
     private var settingsPanel: SettingsPanelController?
     private var aboutPanel: AboutPanelController?
+    private var didShowMainPanelOnLaunch = false
 
     convenience init() {
         self.init(blueLightService: BlueLightFilterService())
@@ -217,6 +223,13 @@ final class AppState: ObservableObject {
 
     func showMainPanel() {
         mainPanel?.show()
+    }
+
+    /// 应用界面首次就绪时打开主窗口；重复渲染菜单栏图标不会再次抢占焦点。
+    func showMainPanelOnLaunch() {
+        guard !didShowMainPanelOnLaunch else { return }
+        didShowMainPanelOnLaunch = true
+        showMainPanel()
     }
 
     func toggleMainPanel() {
