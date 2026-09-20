@@ -397,6 +397,36 @@ final class AppState: ObservableObject {
         persistSettings()
     }
 
+    /// 恢复所有 ClearView 应用设置；不撤销 macOS 系统权限。
+    func restoreDefaultSettings() {
+        breakCountdownTimer?.invalidate()
+        breakCountdownTimer = nil
+        reminderPanel?.hide()
+        reminderPhase = .none
+        isReminderPreview = false
+        reminderService.stop()
+
+        // 开机启动属于系统登录项，需要单独撤销；蓝光档位和其余设置由默认配置统一恢复。
+        try? SMAppService.mainApp.unregister()
+        settingsStore.save(.default)
+        loadSettings()
+
+        for action in ShortcutAction.allCases {
+            let binding = action.defaultBinding
+            _ = shortcutManager.updateShortcut(
+                action: action,
+                keyCode: binding.keyCode,
+                modifierFlagsRaw: binding.modifierFlagsRaw
+            )
+        }
+
+        completedPomodoroRounds = 0
+        if reminderEnabled, startTimerOnLaunch {
+            reminderService.start(configuration: rhythmConfiguration)
+        }
+        persistSettings()
+    }
+
     func updateShortcut(action: ShortcutAction, keyCode: UInt16, modifierFlagsRaw: UInt) {
         // 普通按键至少需要一个修饰键；F1-F20 这类功能键允许单独作为全局快捷键。
         let flags = NSEvent.ModifierFlags(rawValue: modifierFlagsRaw)

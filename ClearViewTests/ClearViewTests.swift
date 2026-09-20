@@ -227,4 +227,18 @@ struct ClearViewTests {
         #expect(appState.canCompleteCurrentBreak == false)
     }
 
+    @Test @MainActor func restoringDefaultsResetsPomodoroSettingsAndRound() {
+        let appState = AppState()
+        appState.updatePomodoroRoundsPerSet(2)
+        appState.updatePomodoroLongBreak(30)
+        appState.completedPomodoroRounds = 1
+
+        appState.restoreDefaultSettings()
+
+        #expect(appState.pomodoroRoundsPerSet == 4)
+        #expect(appState.pomodoroLongBreakMinutes == 15)
+        #expect(appState.completedPomodoroRounds == 0)
+        #expect(appState.rhythmMode == .eyeCare)
+    }
+
 }

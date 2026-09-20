@@ -98,6 +98,7 @@ private struct SettingsPanelView: View {
     @State private var isPreferenceSettingsExpanded = false
     @State private var settingsContentHeight: CGFloat = 0
     @State private var expandedRhythmCard: String?
+    @State private var showRestoreDefaultsConfirmation = false
 
     private var isDark: Bool { colorScheme == .dark }
     private var textPrimary: Color { Color.white.opacity(0.96) }
@@ -131,6 +132,33 @@ private struct SettingsPanelView: View {
                             .font(.headline)
                             .foregroundStyle(textPrimary)
                         Spacer()
+                        Button {
+                            showRestoreDefaultsConfirmation = true
+                        } label: {
+                            Image(systemName: "arrow.counterclockwise")
+                                .font(.system(size: 13, weight: .semibold))
+                                .frame(width: 30, height: 30)
+                                .foregroundStyle(textSecondary)
+                                .background(Color.clear)
+                                .modifier(SettingsGlassButtonModifier(cornerRadius: 15, intensity: 1.0, tint: buttonTint, border: buttonBorder))
+                                .clipShape(Circle())
+                        }
+                        .buttonStyle(.plain)
+                        .focusable(false)
+                        .hoverTooltip("恢复默认设置")
+                        .confirmationDialog(
+                            "恢复所有默认设置？",
+                            isPresented: $showRestoreDefaultsConfirmation,
+                            titleVisibility: .visible
+                        ) {
+                            Button("恢复默认设置", role: .destructive) {
+                                appState.restoreDefaultSettings()
+                            }
+                            Button("取消", role: .cancel) {}
+                        } message: {
+                            Text("这会覆盖当前的节奏、外观、快捷键和启动偏好。")
+                        }
+
                         Button {
                             appState.hideSettingsPanel()
                         } label: {
