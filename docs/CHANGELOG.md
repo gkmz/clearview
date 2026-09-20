@@ -4,10 +4,28 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+- The main window now opens automatically when ClearView launches.
+- Main timer button tooltips now show the currently configured shortcuts when available.
+
+### Fixed
+- Pomodoro focus, break, round, and long-break changes now apply immediately to the active timer state.
+- Fixed unreadable inactive text in the fixed day/night background selector.
+
 ## [0.3.0] - 2026-09-20
+
+### Added
+- Configurable Pomodoro rounds per set and long-break duration.
+- Separate custom light and dark background images.
+- Restore-default-settings action for resetting application preferences.
 
 ### Changed
 - Updated the application, Xcode project, and documentation release version to `0.3.0`.
+- Pomodoro mode now displays the configured focus duration when the app launches.
+
+### Fixed
+- Fixed the initial countdown to respect the selected rhythm instead of always showing the Eye Relax interval.
+- Fixed image selection and restore buttons using an unreadable dark text color in the settings panel.
 
 ## [0.2.2] - 2026-08-12
 
