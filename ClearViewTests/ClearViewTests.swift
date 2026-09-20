@@ -203,6 +203,31 @@ struct ClearViewTests {
         #expect(appState.secondsUntilBreak == appState.pomodoroFocusMinutes * 60)
     }
 
+    @Test @MainActor func launchDisplaysConfiguredPomodoroDurationWhenAutoStartIsDisabled() throws {
+        let defaults = UserDefaults.standard
+        let settingsKey = "clearview.app.settings.v1"
+        let previousSettings = defaults.data(forKey: settingsKey)
+        defer {
+            if let previousSettings {
+                defaults.set(previousSettings, forKey: settingsKey)
+            } else {
+                defaults.removeObject(forKey: settingsKey)
+            }
+        }
+
+        var settings = AppSettings.default
+        settings.rhythmModeKey = RhythmMode.pomodoro.settingsKey
+        settings.pomodoroFocusMinutes = 25
+        settings.startTimerOnLaunch = false
+        AppSettingsStore(defaults: defaults).save(settings)
+
+        let appState = AppState()
+
+        #expect(appState.rhythmMode == .pomodoro)
+        #expect(appState.reminderEnabled == false)
+        #expect(appState.secondsUntilBreak == 25 * 60)
+    }
+
     @Test @MainActor func testReminderPreviewDoesNotChangeMainCountdown() {
         let appState = AppState()
         appState.updateRhythmMode(.eyeCare)

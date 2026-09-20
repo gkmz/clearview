@@ -843,8 +843,8 @@ final class AppState: ObservableObject {
         launchAtLoginEnabled = SMAppService.mainApp.status == .enabled
         startTimerOnLaunch = settings.startTimerOnLaunch
 
-        // 应用启动时恢复倒计时基础值，避免界面显示与配置不一致。
-        secondsUntilBreak = workIntervalMinutes * 60
+        // 应用启动时按已保存的节奏恢复倒计时；番茄模式不能沿用舒眼间隔。
+        secondsUntilBreak = rhythmConfiguration.initialFocusSeconds
         breakSecondsLeft = breakDurationSeconds
 
         // 启动时恢复上次蓝光档位，让视觉状态连续。

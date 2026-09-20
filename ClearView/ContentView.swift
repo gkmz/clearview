@@ -664,9 +664,11 @@ struct ContentView: View {
             Spacer()
             Button("选择") { appState.chooseBackgroundImage(for: kind) }
                 .buttonStyle(.bordered)
+                .foregroundStyle(textPrimary)
             if (kind == .light ? appState.customLightBackgroundFileName : appState.customDarkBackgroundFileName) != nil {
                 Button("默认") { appState.restoreDefaultBackground(for: kind) }
                     .buttonStyle(.bordered)
+                    .foregroundStyle(textPrimary)
             }
         }
     }
