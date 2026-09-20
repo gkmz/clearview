@@ -268,12 +268,20 @@ struct ContentView: View {
                 HStack(spacing: 14) {
                     roundIconButton(
                         systemName: appState.reminderEnabled ? "pause.fill" : "play.fill",
-                        accessibility: appState.reminderEnabled ? "暂停计时" : "开始计时"
+                        accessibility: appState.reminderEnabled ? "暂停计时" : "开始计时",
+                        help: shortcutHelp(
+                            appState.reminderEnabled ? "暂停计时" : "开始计时",
+                            action: .toggleReminder
+                        )
                     ) {
                         appState.toggleReminder(!appState.reminderEnabled)
                     }
 
-                    roundIconButton(systemName: "arrow.clockwise", accessibility: "重新开始") {
+                    roundIconButton(
+                        systemName: "arrow.clockwise",
+                        accessibility: "重新开始",
+                        help: "重新开始（暂无快捷键）"
+                    ) {
                         appState.resetReminderTimer()
                     }
                 }
@@ -384,7 +392,10 @@ struct ContentView: View {
                 appState.showAboutPanel()
             }
 
-            bottomIconButton(systemName: "power", help: "隐藏主界面") {
+            bottomIconButton(
+                systemName: "power",
+                help: shortcutHelp("隐藏主界面", action: .toggleMainPanel)
+            ) {
                 appState.hideMainPanel()
             }
         }
@@ -907,7 +918,12 @@ struct ContentView: View {
         .hoverTooltip("看看\(title)")
     }
 
-    private func roundIconButton(systemName: String, accessibility: String, action: @escaping () -> Void) -> some View {
+    private func roundIconButton(
+        systemName: String,
+        accessibility: String,
+        help: String? = nil,
+        action: @escaping () -> Void
+    ) -> some View {
         Button(action: action) {
             Image(systemName: systemName)
                 .font(.system(size: 24, weight: .semibold))
@@ -920,7 +936,12 @@ struct ContentView: View {
         .buttonStyle(.plain)
         .focusable(false)
         .accessibilityLabel(accessibility)
-        .hoverTooltip(accessibility)
+        .hoverTooltip(help ?? accessibility)
+    }
+
+    /// 组合按钮说明与用户当前配置的快捷键，设置变更后提示会自动刷新。
+    private func shortcutHelp(_ title: String, action: ShortcutAction) -> String {
+        "\(title)（\(appState.shortcutDisplayString(for: action))）"
     }
 
     private func reminderIntensityRow() -> some View {
