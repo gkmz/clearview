@@ -10,6 +10,7 @@ import SwiftUI
 import Foundation
 import Combine
 import ServiceManagement
+import UniformTypeIdentifiers
 
 @main
 struct ClearViewApp: App {
@@ -68,6 +69,9 @@ final class AppState: ObservableObject {
     @Published var useBackgroundImage = true
     @Published var backgroundImageMode: BackgroundImageMode = .system
     @Published var fixedBackgroundIsDark = false
+    @Published var customLightBackgroundFileName: String?
+    @Published var customDarkBackgroundFileName: String?
+    @Published var backgroundImageNotice: String?
     @Published var playBreakFinishedSound = false
     @Published var shortcutKeyCode: UInt16 = 49
     @Published var shortcutModifierFlagsRaw: UInt = 1_179_648
@@ -114,6 +118,7 @@ final class AppState: ObservableObject {
     private let blueLightService: BlueLightFiltering
     private let shortcutManager = GlobalShortcutManager.shared
     private let settingsStore = AppSettingsStore()
+    private let backgroundImageStore = BackgroundImageStore()
     private let preparationSeconds = 5
     private let previewSeconds = 20
     private var pomodoroEyeBreakEnabled = true
@@ -373,6 +378,52 @@ final class AppState: ObservableObject {
         persistSettings()
     }
 
+    /// 打开系统图片选择器并导入指定主题的背景图。
+    func chooseBackgroundImage(for kind: CustomBackgroundKind) {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.png, .jpeg, .heic, .tiff]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        panel.title = kind == .light ? "选择浅色背景图" : "选择深色背景图"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        do {
+            let result = try backgroundImageStore.importImage(from: url, for: kind)
+            if kind == .light {
+                customLightBackgroundFileName = kind.fileName
+            } else {
+                customDarkBackgroundFileName = kind.fileName
+            }
+            backgroundImageNotice = result.isLowResolution
+                ? "图片已应用，但分辨率较低，放大后可能略显模糊。"
+                : nil
+            persistSettings()
+        } catch {
+            backgroundImageNotice = error.localizedDescription
+        }
+    }
+
+    /// 删除指定主题的自定义背景并回退到内置图片。
+    func restoreDefaultBackground(for kind: CustomBackgroundKind) {
+        try? backgroundImageStore.removeImage(for: kind)
+        if kind == .light {
+            customLightBackgroundFileName = nil
+        } else {
+            customDarkBackgroundFileName = nil
+        }
+        backgroundImageNotice = nil
+        persistSettings()
+    }
+
+    /// 返回指定主题的自定义背景图，未配置时返回 nil。
+    func customBackgroundImage(for kind: CustomBackgroundKind) -> NSImage? {
+        let configuredFileName = kind == .light
+            ? customLightBackgroundFileName
+            : customDarkBackgroundFileName
+        guard configuredFileName == kind.fileName else { return nil }
+        return backgroundImageStore.image(for: kind)
+    }
+
     func updateBreakFinishedSoundEnabled(_ enabled: Bool) {
         playBreakFinishedSound = enabled
         persistSettings()
@@ -408,6 +459,7 @@ final class AppState: ObservableObject {
 
         // 开机启动属于系统登录项，需要单独撤销；蓝光档位和其余设置由默认配置统一恢复。
         try? SMAppService.mainApp.unregister()
+        try? backgroundImageStore.removeAllImages()
         settingsStore.save(.default)
         loadSettings()
 
@@ -769,6 +821,8 @@ final class AppState: ObservableObject {
         useBackgroundImage = settings.useBackgroundImage
         backgroundImageMode = BackgroundImageMode(rawValue: settings.backgroundImageModeKey) ?? .system
         fixedBackgroundIsDark = settings.fixedBackgroundIsDark
+        customLightBackgroundFileName = backgroundImageStore.hasImage(for: .light) ? settings.customLightBackgroundFileName : nil
+        customDarkBackgroundFileName = backgroundImageStore.hasImage(for: .dark) ? settings.customDarkBackgroundFileName : nil
         playBreakFinishedSound = settings.playBreakFinishedSound
         // 新字段优先，旧字段只作为解码阶段的回退；这里统一使用新字段赋值到运行时状态。
         shortcutKeyCode = settings.shortcutToggleMainPanelKeyCode
@@ -853,6 +907,8 @@ final class AppState: ObservableObject {
             useBackgroundImage: useBackgroundImage,
             backgroundImageModeKey: backgroundImageMode.rawValue,
             fixedBackgroundIsDark: fixedBackgroundIsDark,
+            customLightBackgroundFileName: customLightBackgroundFileName,
+            customDarkBackgroundFileName: customDarkBackgroundFileName,
             playBreakFinishedSound: playBreakFinishedSound,
             shortcutKeyCode: shortcutKeyCode,
             shortcutModifierFlagsRaw: shortcutModifierFlagsRaw,

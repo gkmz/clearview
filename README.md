@@ -43,6 +43,7 @@ ClearView is a very minimalist macOS app that helps users maintain healthier scr
 - Reminder actions: complete now, snooze, and restart timing.
 - Eye-care and Pomodoro rhythms: Eye Care reminds you on a fixed interval; Pomodoro runs focus/short-rest cycles, adds a long rest after each configurable set, and guides an eye break at the start of rest.
 - Blue-light filter presets: `Off`, `Light`, `Medium`, `Night`.
+- Light and dark background images can be customized independently; imported images are copied into the app data directory and proportionally limited to a 4096-pixel maximum dimension. Low-resolution images remain usable with a clarity notice.
 - Multiple customizable global shortcuts.
 - Local-only settings persistence via `UserDefaults`.
 

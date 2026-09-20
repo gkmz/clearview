@@ -7,6 +7,7 @@
 
 import Testing
 import Foundation
+import AppKit
 @testable import ClearView
 
 struct ClearViewTests {
@@ -46,6 +47,40 @@ struct ClearViewTests {
         #expect(settings.shortcutToggleRhythmModeModifierFlagsRaw == ShortcutAction.toggleRhythmMode.defaultBinding.modifierFlagsRaw)
         #expect(settings.backgroundImageModeKey == BackgroundImageMode.system.rawValue)
         #expect(settings.fixedBackgroundIsDark == false)
+        #expect(settings.customLightBackgroundFileName == nil)
+        #expect(settings.customDarkBackgroundFileName == nil)
+    }
+
+    @Test func backgroundImageStoreImportsAndReportsResolution() throws {
+        let temporaryDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ClearViewTests-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+        let sourceURL = temporaryDirectory.appendingPathComponent("source.png")
+        try FileManager.default.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true)
+        let bitmap = NSBitmapImageRep(
+            bitmapDataPlanes: nil,
+            pixelsWide: 5000,
+            pixelsHigh: 1000,
+            bitsPerSample: 8,
+            samplesPerPixel: 4,
+            hasAlpha: true,
+            isPlanar: false,
+            colorSpaceName: .deviceRGB,
+            bytesPerRow: 0,
+            bitsPerPixel: 0
+        )!
+        try bitmap.representation(using: .png, properties: [:])!.write(to: sourceURL)
+
+        let store = BackgroundImageStore(directoryURL: temporaryDirectory.appendingPathComponent("Backgrounds"))
+        let result = try store.importImage(from: sourceURL, for: .light)
+
+        #expect(result.pixelWidth == 5000)
+        #expect(result.pixelHeight == 1000)
+        #expect(!result.isLowResolution)
+        let importedImage = store.image(for: .light)
+        #expect(importedImage?.representations.first?.pixelsWide == 4096)
+        #expect(importedImage?.representations.first?.pixelsHigh == 819)
     }
 
     @Test @MainActor func timeContextUsesWarmLateNightCopy() {

@@ -120,8 +120,13 @@ struct ContentView: View {
     private var backgroundImage: some View {
         // 允许用户关闭背景图，直接回退为纯色背景，减少干扰。
         if appState.useBackgroundImage {
+            if let custom = appState.customBackgroundImage(for: backgroundIsDark ? .dark : .light) {
+                Image(nsImage: custom)
+                    .resizable()
+                    .scaledToFill()
+                    .opacity(appState.backgroundImageOpacity)
             // SwiftPM 资源中的图片用 Bundle.module 显式读取，避免名称解析失败。
-            if let url = Bundle.main.url(forResource: backgroundIsDark ? "dark" : "light", withExtension: "jpg"),
+            } else if let url = Bundle.main.url(forResource: backgroundIsDark ? "dark" : "light", withExtension: "jpg"),
                let image = NSImage(contentsOf: url) {
                 Image(nsImage: image)
                     .resizable()
@@ -579,6 +584,13 @@ struct ContentView: View {
                 backgroundModeRow
 
                 if appState.useBackgroundImage {
+                    customBackgroundSettingRow(kind: .light, title: "浅色背景图")
+                    customBackgroundSettingRow(kind: .dark, title: "深色背景图")
+                    if let notice = appState.backgroundImageNotice {
+                        Text(notice)
+                            .font(.caption)
+                            .foregroundStyle(textSecondary)
+                    }
                     opacitySettingRow(
                         title: "背景图透明度",
                         value: Binding(
@@ -642,6 +654,21 @@ struct ContentView: View {
                     .preference(key: SettingsContentHeightKey.self, value: proxy.size.height)
             }
         )
+    }
+
+    private func customBackgroundSettingRow(kind: CustomBackgroundKind, title: String) -> some View {
+        HStack(spacing: 8) {
+            Text(title)
+                .font(.subheadline)
+                .foregroundStyle(textSecondary)
+            Spacer()
+            Button("选择") { appState.chooseBackgroundImage(for: kind) }
+                .buttonStyle(.bordered)
+            if (kind == .light ? appState.customLightBackgroundFileName : appState.customDarkBackgroundFileName) != nil {
+                Button("默认") { appState.restoreDefaultBackground(for: kind) }
+                    .buttonStyle(.bordered)
+            }
+        }
     }
 
     private func bottomIconButton(

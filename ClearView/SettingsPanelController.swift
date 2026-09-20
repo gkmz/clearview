@@ -303,6 +303,13 @@ private struct SettingsPanelView: View {
                 backgroundModeRow
 
                 if appState.useBackgroundImage {
+                    customBackgroundSettingRow(kind: .light, title: "浅色背景图")
+                    customBackgroundSettingRow(kind: .dark, title: "深色背景图")
+                    if let notice = appState.backgroundImageNotice {
+                        Text(notice)
+                            .font(.caption)
+                            .foregroundStyle(textSecondary)
+                    }
                     opacitySettingRow(
                         title: "背景图透明度",
                         value: Binding(
@@ -374,6 +381,21 @@ private struct SettingsPanelView: View {
                     .preference(key: SettingsPanelContentHeightKey.self, value: proxy.size.height)
             }
         )
+    }
+
+    private func customBackgroundSettingRow(kind: CustomBackgroundKind, title: String) -> some View {
+        HStack(spacing: 8) {
+            Text(title)
+                .font(.subheadline)
+                .foregroundStyle(textSecondary)
+            Spacer()
+            Button("选择") { appState.chooseBackgroundImage(for: kind) }
+                .buttonStyle(.bordered)
+            if (kind == .light ? appState.customLightBackgroundFileName : appState.customDarkBackgroundFileName) != nil {
+                Button("默认") { appState.restoreDefaultBackground(for: kind) }
+                    .buttonStyle(.bordered)
+            }
+        }
     }
 
     private func settingsSection<Content: View>(

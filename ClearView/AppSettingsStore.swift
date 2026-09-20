@@ -269,6 +269,9 @@ struct AppSettings: Codable {
     var useBackgroundImage: Bool
     var backgroundImageModeKey: String
     var fixedBackgroundIsDark: Bool
+    /// 用户导入的浅色/深色背景文件名；为空时使用内置背景。
+    var customLightBackgroundFileName: String?
+    var customDarkBackgroundFileName: String?
     var playBreakFinishedSound: Bool
     // 兼容历史配置（单一主快捷键字段），迁移期保留，避免老用户升级后丢失快捷键。
     var shortcutKeyCode: UInt16
@@ -309,6 +312,8 @@ struct AppSettings: Codable {
         useBackgroundImage: true,
         backgroundImageModeKey: BackgroundImageMode.system.rawValue,
         fixedBackgroundIsDark: false,
+        customLightBackgroundFileName: nil,
+        customDarkBackgroundFileName: nil,
         playBreakFinishedSound: false,
         shortcutKeyCode: ShortcutAction.toggleMainPanel.defaultBinding.keyCode,
         shortcutModifierFlagsRaw: ShortcutAction.toggleMainPanel.defaultBinding.modifierFlagsRaw,
@@ -348,6 +353,8 @@ struct AppSettings: Codable {
         case useBackgroundImage
         case backgroundImageModeKey
         case fixedBackgroundIsDark
+        case customLightBackgroundFileName
+        case customDarkBackgroundFileName
         case playBreakFinishedSound
         case shortcutKeyCode
         case shortcutModifierFlagsRaw
@@ -387,6 +394,8 @@ struct AppSettings: Codable {
         useBackgroundImage: Bool,
         backgroundImageModeKey: String,
         fixedBackgroundIsDark: Bool,
+        customLightBackgroundFileName: String?,
+        customDarkBackgroundFileName: String?,
         playBreakFinishedSound: Bool,
         shortcutKeyCode: UInt16,
         shortcutModifierFlagsRaw: UInt,
@@ -424,6 +433,8 @@ struct AppSettings: Codable {
         self.useBackgroundImage = useBackgroundImage
         self.backgroundImageModeKey = backgroundImageModeKey
         self.fixedBackgroundIsDark = fixedBackgroundIsDark
+        self.customLightBackgroundFileName = customLightBackgroundFileName
+        self.customDarkBackgroundFileName = customDarkBackgroundFileName
         self.playBreakFinishedSound = playBreakFinishedSound
         self.shortcutKeyCode = shortcutKeyCode
         self.shortcutModifierFlagsRaw = shortcutModifierFlagsRaw
@@ -467,6 +478,8 @@ struct AppSettings: Codable {
         useBackgroundImage = try container.decodeIfPresent(Bool.self, forKey: .useBackgroundImage) ?? defaults.useBackgroundImage
         backgroundImageModeKey = try container.decodeIfPresent(String.self, forKey: .backgroundImageModeKey) ?? defaults.backgroundImageModeKey
         fixedBackgroundIsDark = try container.decodeIfPresent(Bool.self, forKey: .fixedBackgroundIsDark) ?? defaults.fixedBackgroundIsDark
+        customLightBackgroundFileName = try container.decodeIfPresent(String.self, forKey: .customLightBackgroundFileName) ?? defaults.customLightBackgroundFileName
+        customDarkBackgroundFileName = try container.decodeIfPresent(String.self, forKey: .customDarkBackgroundFileName) ?? defaults.customDarkBackgroundFileName
         playBreakFinishedSound = try container.decodeIfPresent(Bool.self, forKey: .playBreakFinishedSound) ?? defaults.playBreakFinishedSound
 
         // 关键流程：先读取旧字段，再作为新字段的回退值，保证历史版本平滑升级到多快捷键结构。
