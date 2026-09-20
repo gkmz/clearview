@@ -227,6 +227,8 @@ final class AppState: ObservableObject {
 
     /// 应用界面首次就绪时打开主窗口；重复渲染菜单栏图标不会再次抢占焦点。
     func showMainPanelOnLaunch() {
+        // XCTest 使用应用作为测试宿主；自动开窗会阻塞 runner 正常结束。
+        guard ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil else { return }
         guard !didShowMainPanelOnLaunch else { return }
         didShowMainPanelOnLaunch = true
         showMainPanel()
