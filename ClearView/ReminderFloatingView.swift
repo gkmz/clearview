@@ -165,12 +165,14 @@ struct ReminderFloatingView: View {
             titleTextView(
                 context == .lateNight && !appState.isReminderPreview
                     ? context.lateNightPreparingTitle
+                    : appState.activeBreakKind == .pomodoroLong
+                    ? AppCopy.ReminderPopup.pomodoroLongPreparingTitle
                     : appState.activeBreakKind == .pomodoro
                     ? AppCopy.ReminderPopup.pomodoroPreparingTitle
                     : AppCopy.ReminderPopup.preparingTitle
             )
         case .pomodoroResting:
-            titleTextView(context == .lateNight ? context.restingTitle : AppCopy.ReminderPopup.pomodoroRestingTitle)
+            titleTextView(context == .lateNight ? context.restingTitle : appState.activeBreakKind == .pomodoroLong ? AppCopy.ReminderPopup.pomodoroLongRestingTitle : AppCopy.ReminderPopup.pomodoroRestingTitle)
         case .completed:
             titleTextView(
                 appState.isReminderPreview
@@ -196,11 +198,13 @@ struct ReminderFloatingView: View {
         case .preparing:
             title = context == .lateNight && !appState.isReminderPreview
                 ? context.lateNightPreparingTitle
+                : appState.activeBreakKind == .pomodoroLong
+                ? AppCopy.ReminderPopup.pomodoroLongPreparingTitle
                 : appState.activeBreakKind == .pomodoro
                 ? AppCopy.ReminderPopup.pomodoroPreparingTitle
                 : AppCopy.ReminderPopup.preparingTitle
         case .pomodoroResting:
-            title = context == .lateNight ? context.restingTitle : AppCopy.ReminderPopup.pomodoroRestingTitle
+            title = context == .lateNight ? context.restingTitle : appState.activeBreakKind == .pomodoroLong ? AppCopy.ReminderPopup.pomodoroLongRestingTitle : AppCopy.ReminderPopup.pomodoroRestingTitle
         case .completed:
             title = appState.isReminderPreview
                 ? "预览结束"
@@ -221,11 +225,13 @@ struct ReminderFloatingView: View {
         case .preparing:
             return context == .lateNight && !appState.isReminderPreview
                 ? context.lateNightPreparingMessage
+                : appState.activeBreakKind == .pomodoroLong
+                ? AppCopy.ReminderPopup.pomodoroLongPreparingMessage
                 : appState.activeBreakKind == .pomodoro
                 ? AppCopy.ReminderPopup.pomodoroPreparingMessage
                 : AppCopy.ReminderPopup.preparingMessage
         case .pomodoroResting:
-            return context == .lateNight ? context.restingMessage : AppCopy.ReminderPopup.pomodoroRestingMessage
+            return context == .lateNight ? context.restingMessage : appState.activeBreakKind == .pomodoroLong ? AppCopy.ReminderPopup.pomodoroLongRestingMessage : AppCopy.ReminderPopup.pomodoroRestingMessage
         case .completed:
             if appState.isReminderPreview {
                 return "预览不会改变当前节奏。"
@@ -233,7 +239,9 @@ struct ReminderFloatingView: View {
             if context == .lateNight {
                 return context.lateNightCompletedMessage
             }
-            return appState.activeBreakKind == .pomodoro
+            return appState.activeBreakKind == .pomodoroLong
+                ? AppCopy.ReminderPopup.pomodoroLongCompletedMessage
+                : appState.activeBreakKind == .pomodoro
                 ? AppCopy.ReminderPopup.pomodoroCompletedMessage
                 : AppCopy.ReminderPopup.completedMessage
         default:
@@ -304,7 +312,7 @@ struct ReminderFloatingView: View {
         case "xmark":
             return "关闭预览"
         case "play.fill":
-            return appState.activeBreakKind == .pomodoro
+            return appState.activeBreakKind == .pomodoro || appState.activeBreakKind == .pomodoroLong
                 ? AppCopy.ReminderPopup.pomodoroDoneHelp
                 : AppCopy.ReminderPopup.doneHelp
         default:

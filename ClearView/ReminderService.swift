@@ -6,6 +6,8 @@ struct RhythmConfiguration: Equatable {
     var eyeBreakDurationSeconds: Int
     var pomodoroFocusMinutes: Int
     var pomodoroBreakMinutes: Int
+    var pomodoroRoundsPerSet: Int = 4
+    var pomodoroLongBreakMinutes: Int = 15
     // Legacy settings kept for decoding older preferences. Pomodoro focus no longer
     // inserts eye-care breaks; rest starts after the focus session ends.
     var pomodoroEyeBreakEnabled: Bool
@@ -31,11 +33,16 @@ struct RhythmConfiguration: Equatable {
     var pomodoroBreakSeconds: Int {
         max(1, pomodoroBreakMinutes) * 60
     }
+
+    var pomodoroLongBreakSeconds: Int {
+        max(1, pomodoroLongBreakMinutes) * 60
+    }
 }
 
 enum RhythmBreakKind: Equatable {
     case eye
     case pomodoro
+    case pomodoroLong
 }
 
 enum RhythmServicePhase: Equatable {
@@ -47,6 +54,7 @@ struct RhythmTick: Equatable {
     var phase: RhythmServicePhase
     var secondsLeft: Int
     var focusSecondsRemaining: Int
+    var completedPomodoroRounds: Int
 }
 
 final class ReminderService {
@@ -60,16 +68,21 @@ final class ReminderService {
         eyeBreakDurationSeconds: 20,
         pomodoroFocusMinutes: 25,
         pomodoroBreakMinutes: 5,
+        pomodoroRoundsPerSet: 4,
+        pomodoroLongBreakMinutes: 15,
         pomodoroEyeBreakEnabled: true,
         mergeEyeBreakThresholdSeconds: 120
     )
     private var phase: RhythmServicePhase = .focus
     private var focusSecondsRemaining: Int = 20 * 60
     private var phaseSecondsLeft: Int = 20 * 60
+    /// 当前番茄组已完成的专注轮次，长休息完成后归零。
+    private(set) var completedPomodoroRounds = 0
 
     func start(configuration: RhythmConfiguration) {
         stop()
         self.configuration = normalized(configuration)
+        completedPomodoroRounds = 0
         beginFocus()
         scheduleMainTimerIfNeeded()
     }
@@ -77,6 +90,7 @@ final class ReminderService {
     func reset(configuration: RhythmConfiguration) {
         stop()
         self.configuration = normalized(configuration)
+        completedPomodoroRounds = 0
         beginFocus()
     }
 
@@ -98,11 +112,17 @@ final class ReminderService {
     }
 
     func completeBreak() {
+        if case .breakTime(.pomodoroLong) = phase {
+            completedPomodoroRounds = 0
+        }
         beginFocus()
         scheduleMainTimerIfNeeded()
     }
 
     func skipBreak() {
+        if case .breakTime(.pomodoroLong) = phase {
+            completedPomodoroRounds = 0
+        }
         beginFocus()
         scheduleMainTimerIfNeeded()
     }
@@ -127,6 +147,8 @@ final class ReminderService {
             eyeBreakDurationSeconds: max(5, configuration.eyeBreakDurationSeconds),
             pomodoroFocusMinutes: max(1, configuration.pomodoroFocusMinutes),
             pomodoroBreakMinutes: max(1, configuration.pomodoroBreakMinutes),
+            pomodoroRoundsPerSet: min(max(2, configuration.pomodoroRoundsPerSet), 4),
+            pomodoroLongBreakMinutes: max(1, configuration.pomodoroLongBreakMinutes),
             pomodoroEyeBreakEnabled: configuration.pomodoroEyeBreakEnabled,
             mergeEyeBreakThresholdSeconds: max(0, configuration.mergeEyeBreakThresholdSeconds)
         )
@@ -146,6 +168,8 @@ final class ReminderService {
             phaseSecondsLeft = configuration.eyeBreakSeconds
         case .pomodoro:
             phaseSecondsLeft = configuration.pomodoroBreakSeconds
+        case .pomodoroLong:
+            phaseSecondsLeft = configuration.pomodoroLongBreakSeconds
         }
         emitTick()
     }
@@ -173,8 +197,15 @@ final class ReminderService {
 
         if focusSecondsRemaining <= 0 {
             stop()
-            beginBreak(configuration.mode == .pomodoro ? .pomodoro : .eye)
-            onBreakTriggered?(configuration.mode == .pomodoro ? .pomodoro : .eye)
+            if configuration.mode == .pomodoro {
+                completedPomodoroRounds += 1
+                let kind: RhythmBreakKind = completedPomodoroRounds >= configuration.pomodoroRoundsPerSet ? .pomodoroLong : .pomodoro
+                beginBreak(kind)
+                onBreakTriggered?(kind)
+            } else {
+                beginBreak(.eye)
+                onBreakTriggered?(.eye)
+            }
             return
         }
 
@@ -196,7 +227,8 @@ final class ReminderService {
             RhythmTick(
                 phase: phase,
                 secondsLeft: max(0, phaseSecondsLeft),
-                focusSecondsRemaining: max(0, focusSecondsRemaining)
+                focusSecondsRemaining: max(0, focusSecondsRemaining),
+                completedPomodoroRounds: completedPomodoroRounds
             )
         )
     }

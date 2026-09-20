@@ -228,7 +228,7 @@ private struct SettingsPanelView: View {
                     rhythmSummaryCard(
                         id: "pomodoro",
                         title: "番茄规则",
-                        summary: "\(appState.pomodoroFocusMinutes) 分钟专注 · 休息 \(appState.pomodoroBreakMinutes) 分钟"
+                        summary: "\(appState.pomodoroFocusMinutes) 分钟专注 · 短休息 \(appState.pomodoroBreakMinutes) 分钟 · 每组 \(appState.pomodoroRoundsPerSet) 轮"
                     ) {
                         presetRow(
                             title: "专注多久",
@@ -243,6 +243,20 @@ private struct SettingsPanelView: View {
                             unit: "分钟",
                             selected: appState.pomodoroBreakMinutes
                         ) { appState.updatePomodoroBreak($0) }
+
+                        presetRow(
+                            title: "每组几轮",
+                            values: [2, 3, 4],
+                            unit: "轮",
+                            selected: appState.pomodoroRoundsPerSet
+                        ) { appState.updatePomodoroRoundsPerSet($0) }
+
+                        presetRow(
+                            title: "长休息多久",
+                            values: [15, 20, 30],
+                            unit: "分钟",
+                            selected: appState.pomodoroLongBreakMinutes
+                        ) { appState.updatePomodoroLongBreak($0) }
                     }
                 }
             }

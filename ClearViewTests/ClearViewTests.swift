@@ -36,6 +36,8 @@ struct ClearViewTests {
         #expect(settings.eyeBreakDurationSeconds == 40)
         #expect(settings.pomodoroFocusMinutes == 25)
         #expect(settings.pomodoroBreakMinutes == 5)
+        #expect(settings.pomodoroRoundsPerSet == 4)
+        #expect(settings.pomodoroLongBreakMinutes == 15)
         #expect(settings.pomodoroEyeBreakEnabled == true)
         #expect(settings.mergeEyeBreakThresholdSeconds == 120)
         #expect(settings.launchAtLoginEnabled == false)
@@ -70,6 +72,8 @@ struct ClearViewTests {
         #expect(settings.eyeBreakDurationSeconds == 20)
         #expect(settings.pomodoroFocusMinutes == 25)
         #expect(settings.pomodoroBreakMinutes == 5)
+        #expect(settings.pomodoroRoundsPerSet == 4)
+        #expect(settings.pomodoroLongBreakMinutes == 15)
         #expect(settings.pomodoroEyeBreakEnabled)
     }
 
@@ -98,6 +102,59 @@ struct ClearViewTests {
         service.stop()
 
         #expect(triggeredBreaks == [.pomodoro])
+    }
+
+    @Test func pomodoroUsesConfiguredLongBreakAfterRoundThreshold() {
+        let service = ReminderService()
+        let configuration = RhythmConfiguration(
+            mode: .pomodoro,
+            eyeIntervalMinutes: 20,
+            eyeBreakDurationSeconds: 20,
+            pomodoroFocusMinutes: 1,
+            pomodoroBreakMinutes: 1,
+            pomodoroRoundsPerSet: 2,
+            pomodoroLongBreakMinutes: 15,
+            pomodoroEyeBreakEnabled: true,
+            mergeEyeBreakThresholdSeconds: 120
+        )
+        var breaks: [RhythmBreakKind] = []
+        service.onBreakTriggered = { breaks.append($0) }
+        service.start(configuration: configuration)
+        service.stop()
+        for _ in 0..<60 { service.advanceOneSecondForTesting() }
+        #expect(breaks == [.pomodoro])
+        service.completeBreak()
+        service.stop()
+        for _ in 0..<60 { service.advanceOneSecondForTesting() }
+        #expect(breaks == [.pomodoro, .pomodoroLong])
+        #expect(service.completedPomodoroRounds == 2)
+        service.completeBreak()
+        #expect(service.completedPomodoroRounds == 0)
+    }
+
+    @Test func pomodoroFourRoundDefaultKeepsFirstThreeBreaksShort() {
+        let service = ReminderService()
+        let configuration = RhythmConfiguration(
+            mode: .pomodoro,
+            eyeIntervalMinutes: 20,
+            eyeBreakDurationSeconds: 20,
+            pomodoroFocusMinutes: 1,
+            pomodoroBreakMinutes: 1,
+            pomodoroRoundsPerSet: 4,
+            pomodoroLongBreakMinutes: 15,
+            pomodoroEyeBreakEnabled: true,
+            mergeEyeBreakThresholdSeconds: 120
+        )
+        var breaks: [RhythmBreakKind] = []
+        service.onBreakTriggered = { breaks.append($0) }
+        service.start(configuration: configuration)
+        service.stop()
+        for round in 0..<4 {
+            for _ in 0..<60 { service.advanceOneSecondForTesting() }
+            if round < 3 { service.completeBreak() }
+            service.stop()
+        }
+        #expect(breaks == [.pomodoro, .pomodoro, .pomodoro, .pomodoroLong])
     }
 
     @Test @MainActor func rhythmModeSwitchRefreshesDisplayedCountdownWhenPaused() {

@@ -259,6 +259,10 @@ struct AppSettings: Codable {
     var eyeBreakDurationSeconds: Int
     var pomodoroFocusMinutes: Int
     var pomodoroBreakMinutes: Int
+    /// 每组番茄专注轮次，允许 2～4 轮。
+    var pomodoroRoundsPerSet: Int
+    /// 番茄长休息时长（分钟）。
+    var pomodoroLongBreakMinutes: Int
     var pomodoroEyeBreakEnabled: Bool
     var mergeEyeBreakThresholdSeconds: Int
     var filterLevelKey: String
@@ -297,6 +301,8 @@ struct AppSettings: Codable {
         eyeBreakDurationSeconds: 20,
         pomodoroFocusMinutes: 25,
         pomodoroBreakMinutes: 5,
+        pomodoroRoundsPerSet: 4,
+        pomodoroLongBreakMinutes: 15,
         pomodoroEyeBreakEnabled: true,
         mergeEyeBreakThresholdSeconds: 120,
         filterLevelKey: "off",
@@ -334,6 +340,8 @@ struct AppSettings: Codable {
         case eyeBreakDurationSeconds
         case pomodoroFocusMinutes
         case pomodoroBreakMinutes
+        case pomodoroRoundsPerSet
+        case pomodoroLongBreakMinutes
         case pomodoroEyeBreakEnabled
         case mergeEyeBreakThresholdSeconds
         case filterLevelKey
@@ -371,6 +379,8 @@ struct AppSettings: Codable {
         eyeBreakDurationSeconds: Int,
         pomodoroFocusMinutes: Int,
         pomodoroBreakMinutes: Int,
+        pomodoroRoundsPerSet: Int,
+        pomodoroLongBreakMinutes: Int,
         pomodoroEyeBreakEnabled: Bool,
         mergeEyeBreakThresholdSeconds: Int,
         filterLevelKey: String,
@@ -406,6 +416,8 @@ struct AppSettings: Codable {
         self.eyeBreakDurationSeconds = eyeBreakDurationSeconds
         self.pomodoroFocusMinutes = pomodoroFocusMinutes
         self.pomodoroBreakMinutes = pomodoroBreakMinutes
+        self.pomodoroRoundsPerSet = min(max(pomodoroRoundsPerSet, 2), 4)
+        self.pomodoroLongBreakMinutes = max(1, pomodoroLongBreakMinutes)
         self.pomodoroEyeBreakEnabled = pomodoroEyeBreakEnabled
         self.mergeEyeBreakThresholdSeconds = mergeEyeBreakThresholdSeconds
         self.filterLevelKey = filterLevelKey
@@ -447,6 +459,8 @@ struct AppSettings: Codable {
         eyeBreakDurationSeconds = try container.decodeIfPresent(Int.self, forKey: .eyeBreakDurationSeconds) ?? legacyBreakDurationSeconds
         pomodoroFocusMinutes = try container.decodeIfPresent(Int.self, forKey: .pomodoroFocusMinutes) ?? defaults.pomodoroFocusMinutes
         pomodoroBreakMinutes = try container.decodeIfPresent(Int.self, forKey: .pomodoroBreakMinutes) ?? defaults.pomodoroBreakMinutes
+        pomodoroRoundsPerSet = min(max(try container.decodeIfPresent(Int.self, forKey: .pomodoroRoundsPerSet) ?? defaults.pomodoroRoundsPerSet, 2), 4)
+        pomodoroLongBreakMinutes = max(1, try container.decodeIfPresent(Int.self, forKey: .pomodoroLongBreakMinutes) ?? defaults.pomodoroLongBreakMinutes)
         pomodoroEyeBreakEnabled = try container.decodeIfPresent(Bool.self, forKey: .pomodoroEyeBreakEnabled) ?? defaults.pomodoroEyeBreakEnabled
         mergeEyeBreakThresholdSeconds = try container.decodeIfPresent(Int.self, forKey: .mergeEyeBreakThresholdSeconds) ?? defaults.mergeEyeBreakThresholdSeconds
         filterLevelKey = try container.decodeIfPresent(String.self, forKey: .filterLevelKey) ?? defaults.filterLevelKey

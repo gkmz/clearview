@@ -60,6 +60,9 @@ final class AppState: ObservableObject {
     @Published var breakDurationSeconds: Int = 20
     @Published var pomodoroFocusMinutes: Int = 25
     @Published var pomodoroBreakMinutes: Int = 5
+    @Published var pomodoroRoundsPerSet: Int = 4
+    @Published var pomodoroLongBreakMinutes: Int = 15
+    @Published var completedPomodoroRounds: Int = 0
     @Published var secondsUntilBreak: Int = 20 * 60
     @Published var filterLevel: BlueLightLevel = .off
     @Published var useBackgroundImage = true
@@ -99,6 +102,8 @@ final class AppState: ObservableObject {
 
         let totalBreakSeconds = activeBreakKind == .pomodoro
             ? max(1, pomodoroBreakMinutes) * 60
+            : activeBreakKind == .pomodoroLong
+            ? max(1, pomodoroLongBreakMinutes) * 60
             : max(5, breakDurationSeconds)
         let minimumEyeRelaxSeconds = min(20, totalBreakSeconds)
         let elapsedSeconds = max(0, totalBreakSeconds - breakSecondsLeft)
@@ -133,6 +138,7 @@ final class AppState: ObservableObject {
             guard let self else { return }
             Task { @MainActor in
                 self.secondsUntilBreak = tick.focusSecondsRemaining
+                self.completedPomodoroRounds = tick.completedPomodoroRounds
             }
         }
 
@@ -286,6 +292,7 @@ final class AppState: ObservableObject {
     func updateRhythmMode(_ mode: RhythmMode) {
         guard rhythmMode != mode else { return }
         rhythmMode = mode
+        completedPomodoroRounds = 0
         if reminderEnabled {
             reminderService.start(configuration: rhythmConfiguration)
         } else {
@@ -309,6 +316,26 @@ final class AppState: ObservableObject {
 
     func updatePomodoroBreak(_ minutes: Int) {
         pomodoroBreakMinutes = max(1, minutes)
+        persistSettings()
+    }
+
+    /// 更新每组番茄轮次并重置当前组，避免新旧阈值混用。
+    func updatePomodoroRoundsPerSet(_ rounds: Int) {
+        pomodoroRoundsPerSet = min(max(rounds, 2), 4)
+        completedPomodoroRounds = 0
+        if reminderEnabled, rhythmMode == .pomodoro {
+            reminderService.start(configuration: rhythmConfiguration)
+        }
+        persistSettings()
+    }
+
+    /// 更新番茄长休息时长并重置当前组配置。
+    func updatePomodoroLongBreak(_ minutes: Int) {
+        pomodoroLongBreakMinutes = max(1, minutes)
+        completedPomodoroRounds = 0
+        if reminderEnabled, rhythmMode == .pomodoro {
+            reminderService.start(configuration: rhythmConfiguration)
+        }
         persistSettings()
     }
 
@@ -582,6 +609,8 @@ final class AppState: ObservableObject {
             eyeBreakDurationSeconds: breakDurationSeconds,
             pomodoroFocusMinutes: pomodoroFocusMinutes,
             pomodoroBreakMinutes: pomodoroBreakMinutes,
+            pomodoroRoundsPerSet: pomodoroRoundsPerSet,
+            pomodoroLongBreakMinutes: pomodoroLongBreakMinutes,
             pomodoroEyeBreakEnabled: pomodoroEyeBreakEnabled,
             mergeEyeBreakThresholdSeconds: mergeEyeBreakThresholdSeconds
         )
@@ -607,8 +636,12 @@ final class AppState: ObservableObject {
                 guard self.reminderPhase == .preparing else { return }
                 self.breakSecondsLeft -= 1
                 if self.breakSecondsLeft <= 0 {
-                    self.reminderPhase = self.activeBreakKind == .pomodoro ? .pomodoroResting : .resting
-                    self.breakSecondsLeft = self.activeBreakKind == .pomodoro ? self.pomodoroBreakMinutes * 60 : self.breakDurationSeconds
+                    self.reminderPhase = self.activeBreakKind == .pomodoro || self.activeBreakKind == .pomodoroLong ? .pomodoroResting : .resting
+                    self.breakSecondsLeft = self.activeBreakKind == .pomodoro
+                        ? self.pomodoroBreakMinutes * 60
+                        : self.activeBreakKind == .pomodoroLong
+                        ? self.pomodoroLongBreakMinutes * 60
+                        : self.breakDurationSeconds
                     self.reminderPanel?.refresh()
                     self.breakCountdownTimer?.invalidate()
                     self.breakCountdownTimer = nil
@@ -698,6 +731,8 @@ final class AppState: ObservableObject {
         breakDurationSeconds = max(5, settings.eyeBreakDurationSeconds)
         pomodoroFocusMinutes = max(1, settings.pomodoroFocusMinutes)
         pomodoroBreakMinutes = max(1, settings.pomodoroBreakMinutes)
+        pomodoroRoundsPerSet = min(max(2, settings.pomodoroRoundsPerSet), 4)
+        pomodoroLongBreakMinutes = max(1, settings.pomodoroLongBreakMinutes)
         pomodoroEyeBreakEnabled = settings.pomodoroEyeBreakEnabled
         mergeEyeBreakThresholdSeconds = max(0, settings.mergeEyeBreakThresholdSeconds)
         filterLevel = BlueLightLevel.fromSettingsKey(settings.filterLevelKey)
@@ -780,6 +815,8 @@ final class AppState: ObservableObject {
             eyeBreakDurationSeconds: breakDurationSeconds,
             pomodoroFocusMinutes: pomodoroFocusMinutes,
             pomodoroBreakMinutes: pomodoroBreakMinutes,
+            pomodoroRoundsPerSet: pomodoroRoundsPerSet,
+            pomodoroLongBreakMinutes: pomodoroLongBreakMinutes,
             pomodoroEyeBreakEnabled: pomodoroEyeBreakEnabled,
             mergeEyeBreakThresholdSeconds: mergeEyeBreakThresholdSeconds,
             filterLevelKey: filterLevel.settingsKey,
