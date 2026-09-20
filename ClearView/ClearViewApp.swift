@@ -313,14 +313,14 @@ final class AppState: ObservableObject {
 
     func updatePomodoroFocus(_ minutes: Int) {
         pomodoroFocusMinutes = max(1, minutes)
-        if reminderEnabled, rhythmMode == .pomodoro {
-            reminderService.start(configuration: rhythmConfiguration)
-        }
-        persistSettings()
+        refreshPomodoroConfiguration()
     }
 
     func updatePomodoroBreak(_ minutes: Int) {
         pomodoroBreakMinutes = max(1, minutes)
+        if reminderPhase == .pomodoroResting, activeBreakKind == .pomodoro {
+            breakSecondsLeft = pomodoroBreakMinutes * 60
+        }
         persistSettings()
     }
 
@@ -328,19 +328,33 @@ final class AppState: ObservableObject {
     func updatePomodoroRoundsPerSet(_ rounds: Int) {
         pomodoroRoundsPerSet = min(max(rounds, 2), 4)
         completedPomodoroRounds = 0
-        if reminderEnabled, rhythmMode == .pomodoro {
-            reminderService.start(configuration: rhythmConfiguration)
-        }
-        persistSettings()
+        refreshPomodoroConfiguration()
     }
 
     /// 更新番茄长休息时长并重置当前组配置。
     func updatePomodoroLongBreak(_ minutes: Int) {
         pomodoroLongBreakMinutes = max(1, minutes)
         completedPomodoroRounds = 0
-        if reminderEnabled, rhythmMode == .pomodoro {
-            reminderService.start(configuration: rhythmConfiguration)
+        if reminderPhase == .pomodoroResting, activeBreakKind == .pomodoroLong {
+            breakSecondsLeft = pomodoroLongBreakMinutes * 60
         }
+        persistSettings()
+    }
+
+    /// 重新应用番茄专注配置；暂停时也同步刷新主界面初始倒计时。
+    private func refreshPomodoroConfiguration() {
+        guard rhythmMode == .pomodoro, reminderPhase == .none else {
+            persistSettings()
+            return
+        }
+
+        completedPomodoroRounds = 0
+        if reminderEnabled {
+            reminderService.start(configuration: rhythmConfiguration)
+        } else {
+            reminderService.reset(configuration: rhythmConfiguration)
+        }
+        secondsUntilBreak = rhythmConfiguration.initialFocusSeconds
         persistSettings()
     }
 

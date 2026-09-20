@@ -228,6 +228,25 @@ struct ClearViewTests {
         #expect(appState.secondsUntilBreak == 25 * 60)
     }
 
+    @Test @MainActor func pomodoroSettingsRefreshPausedFocusAndActiveBreakDurations() {
+        let appState = AppState()
+        appState.updateRhythmMode(.pomodoro)
+        appState.toggleReminder(false)
+
+        appState.updatePomodoroFocus(45)
+        #expect(appState.secondsUntilBreak == 45 * 60)
+
+        appState.activeBreakKind = .pomodoro
+        appState.reminderPhase = .pomodoroResting
+        appState.breakSecondsLeft = 5 * 60
+        appState.updatePomodoroBreak(10)
+        #expect(appState.breakSecondsLeft == 10 * 60)
+
+        appState.activeBreakKind = .pomodoroLong
+        appState.updatePomodoroLongBreak(30)
+        #expect(appState.breakSecondsLeft == 30 * 60)
+    }
+
     @Test @MainActor func testReminderPreviewDoesNotChangeMainCountdown() {
         let appState = AppState()
         appState.updateRhythmMode(.eyeCare)
