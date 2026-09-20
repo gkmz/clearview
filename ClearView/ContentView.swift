@@ -35,10 +35,14 @@ struct ContentView: View {
 
     // 系统主题只负责控件对比度；背景图片按照用户选择的背景模式独立决定。
     private var isDark: Bool { colorScheme == .dark }
+    /// 菜单栏应用的面板可能独立继承深色外观；背景跟随系统时必须读取应用有效外观。
+    private var systemAppearanceIsDark: Bool {
+        NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+    }
     private var backgroundIsDark: Bool {
         switch appState.backgroundImageMode {
         case .system:
-            return isDark
+            return systemAppearanceIsDark
         case .schedule:
             return TimeContext.current() == .evening || TimeContext.current() == .lateNight
         case .fixed:
