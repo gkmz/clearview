@@ -331,6 +331,7 @@ final class AppState: ObservableObject {
 
     func updatePomodoroBreak(_ minutes: Int) {
         pomodoroBreakMinutes = max(1, minutes)
+        reminderService.updateConfiguration(rhythmConfiguration)
         if reminderPhase == .pomodoroResting, activeBreakKind == .pomodoro {
             breakSecondsLeft = pomodoroBreakMinutes * 60
         }
@@ -348,6 +349,7 @@ final class AppState: ObservableObject {
     func updatePomodoroLongBreak(_ minutes: Int) {
         pomodoroLongBreakMinutes = max(1, minutes)
         completedPomodoroRounds = 0
+        reminderService.updateConfiguration(rhythmConfiguration, resetPomodoroRounds: true)
         if reminderPhase == .pomodoroResting, activeBreakKind == .pomodoroLong {
             breakSecondsLeft = pomodoroLongBreakMinutes * 60
         }
@@ -357,6 +359,7 @@ final class AppState: ObservableObject {
     /// 重新应用番茄专注配置；暂停时也同步刷新主界面初始倒计时。
     private func refreshPomodoroConfiguration() {
         guard rhythmMode == .pomodoro, reminderPhase == .none else {
+            reminderService.updateConfiguration(rhythmConfiguration, resetPomodoroRounds: true)
             persistSettings()
             return
         }

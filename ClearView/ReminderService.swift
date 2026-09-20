@@ -105,6 +105,14 @@ final class ReminderService {
         scheduleMainTimerIfNeeded()
     }
 
+    /// 热更新后续阶段使用的节奏配置，不中断当前专注或休息倒计时。
+    func updateConfiguration(_ configuration: RhythmConfiguration, resetPomodoroRounds: Bool = false) {
+        self.configuration = normalized(configuration)
+        if resetPomodoroRounds {
+            completedPomodoroRounds = 0
+        }
+    }
+
     func forceTrigger(kind: RhythmBreakKind = .eye) {
         stop()
         beginBreak(kind)

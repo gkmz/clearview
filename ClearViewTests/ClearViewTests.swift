@@ -192,6 +192,35 @@ struct ClearViewTests {
         #expect(breaks == [.pomodoro, .pomodoro, .pomodoro, .pomodoroLong])
     }
 
+    @Test func pomodoroConfigurationUpdateAppliesWithoutRestartingCurrentFocus() {
+        let service = ReminderService()
+        var configuration = RhythmConfiguration(
+            mode: .pomodoro,
+            eyeIntervalMinutes: 20,
+            eyeBreakDurationSeconds: 20,
+            pomodoroFocusMinutes: 1,
+            pomodoroBreakMinutes: 5,
+            pomodoroRoundsPerSet: 4,
+            pomodoroLongBreakMinutes: 15,
+            pomodoroEyeBreakEnabled: true,
+            mergeEyeBreakThresholdSeconds: 120
+        )
+        var lastTick: RhythmTick?
+        service.onTick = { lastTick = $0 }
+        service.start(configuration: configuration)
+        service.stop()
+        service.advanceOneSecondForTesting()
+        #expect(lastTick?.focusSecondsRemaining == 59)
+
+        configuration.pomodoroBreakMinutes = 10
+        service.updateConfiguration(configuration)
+        #expect(lastTick?.focusSecondsRemaining == 59)
+
+        for _ in 0..<59 { service.advanceOneSecondForTesting() }
+        #expect(lastTick?.phase == .breakTime(.pomodoro))
+        #expect(lastTick?.secondsLeft == 10 * 60)
+    }
+
     @Test @MainActor func rhythmModeSwitchRefreshesDisplayedCountdownWhenPaused() {
         let appState = AppState()
         appState.updateRhythmMode(.eyeCare)
