@@ -18,7 +18,8 @@ final class MainPanelController {
         self.appState = appState
     }
 
-    func show() {
+    /// 显示主面板；启动时可保持窗口位于最前，避免首次展示后被其他应用覆盖。
+    func show(keepFront: Bool = false) {
         guard let appState else { return }
         if panel == nil {
             panel = makePanel(appState: appState)
@@ -26,12 +27,14 @@ final class MainPanelController {
 
         positionAtScreenCenter()
         NSApplication.shared.activate(ignoringOtherApps: true)
-        // 打开瞬间临时前置，随后降回普通层级，避免主界面长期挡住其他窗口。
+        // 打开瞬间临时前置，确保窗口不会在创建后闪现再被其他应用覆盖。
         panel?.level = .floating
         panel?.orderFrontRegardless()
         panel?.makeKeyAndOrderFront(nil)
         panel?.makeKey()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak panel] in
+        guard !keepFront else { return }
+        DispatchQueue.main.async { [weak panel] in
+            // 普通入口恢复标准层级，避免用户从菜单栏打开面板后长期遮挡其他应用。
             panel?.level = .normal
         }
     }

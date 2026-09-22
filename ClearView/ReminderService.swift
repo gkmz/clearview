@@ -137,6 +137,7 @@ final class ReminderService {
 
     func snooze(minutes: Int) {
         stop()
+        // “稍后”只延迟当前提醒，不结束番茄组；轮数应保留到长休息真正完成。
         phase = .focus
         focusSecondsRemaining = max(1, minutes) * 60
         phaseSecondsLeft = focusSecondsRemaining
@@ -224,10 +225,19 @@ final class ReminderService {
         phaseSecondsLeft -= 1
         if phaseSecondsLeft <= 0 {
             stop()
+            // 长休息倒计时结束即开启新的一组番茄，避免后续专注轮次持续触发长休息。
+            resetPomodoroRoundsIfLongBreak()
             emitTick()
             return
         }
         emitTick()
+    }
+
+    /// 长休息结束后清零当前组轮次，保证下一次专注从短休息周期重新开始。
+    private func resetPomodoroRoundsIfLongBreak() {
+        if case .breakTime(.pomodoroLong) = phase {
+            completedPomodoroRounds = 0
+        }
     }
 
     private func emitTick() {

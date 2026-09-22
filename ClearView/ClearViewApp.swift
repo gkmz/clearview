@@ -231,7 +231,8 @@ final class AppState: ObservableObject {
         guard ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil else { return }
         guard !didShowMainPanelOnLaunch else { return }
         didShowMainPanelOnLaunch = true
-        showMainPanel()
+        // 启动展示必须保持在最前，避免窗口刚出现就因层级恢复而闪退到其他应用后面。
+        mainPanel?.show(keepFront: true)
     }
 
     func toggleMainPanel() {

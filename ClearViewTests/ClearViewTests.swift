@@ -167,6 +167,32 @@ struct ClearViewTests {
         #expect(service.completedPomodoroRounds == 0)
     }
 
+    @Test func snoozingLongBreakKeepsPomodoroRoundCount() {
+        let service = ReminderService()
+        let configuration = RhythmConfiguration(
+            mode: .pomodoro,
+            eyeIntervalMinutes: 20,
+            eyeBreakDurationSeconds: 20,
+            pomodoroFocusMinutes: 1,
+            pomodoroBreakMinutes: 1,
+            pomodoroRoundsPerSet: 2,
+            pomodoroLongBreakMinutes: 15,
+            pomodoroEyeBreakEnabled: true,
+            mergeEyeBreakThresholdSeconds: 120
+        )
+
+        service.start(configuration: configuration)
+        service.stop()
+        for _ in 0..<60 { service.advanceOneSecondForTesting() }
+        service.completeBreak()
+        service.stop()
+        for _ in 0..<60 { service.advanceOneSecondForTesting() }
+
+        #expect(service.completedPomodoroRounds == 2)
+        service.snooze(minutes: 5)
+        #expect(service.completedPomodoroRounds == 2)
+    }
+
     @Test func pomodoroFourRoundDefaultKeepsFirstThreeBreaksShort() {
         let service = ReminderService()
         let configuration = RhythmConfiguration(
