@@ -10,7 +10,7 @@ English | [简体中文](README.zh-CN.md)
 
 ClearView is a very minimalist macOS app that helps users maintain healthier screen-time rhythms with periodic eye-break reminders and blue-light filter controls.
 
-> Current version: `0.3.0` (`release`)
+> Current version: `0.3.1` (`release`)
 
 ## Table of Contents
 - [ClearView](#clearview)

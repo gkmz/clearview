@@ -4,11 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-09-23
+
 ### Changed
+- Reminder countdowns now use a consistent `mm:ss` display, including Pomodoro short and long breaks.
+- The main window stays in front when first shown at launch.
 - The main window now opens automatically when ClearView launches.
 - Main timer button tooltips now show the currently configured shortcuts when available.
 
 ### Fixed
+- Pomodoro round counts now reset after a long break completes, while snoozing preserves the current round set.
 - Pomodoro focus, break, round, and long-break changes now apply immediately to the active timer state.
 - Fixed unreadable inactive text in the fixed day/night background selector.
 

@@ -1,3 +1,4 @@
+import Foundation
 import SwiftUI
 
 struct ReminderFloatingView: View {
@@ -20,6 +21,12 @@ struct ReminderFloatingView: View {
     private var buttonFill: Color { Color.white.opacity((isDark ? 0.10 : 0.12) * opacityFactor) }
     private var buttonBorder: Color { Color.white.opacity((isDark ? 0.24 : 0.26) * opacityFactor) }
 
+    /// 将内部秒数统一显示为分钟:秒，避免番茄长休息显示成难以直读的总秒数。
+    private var countdownText: String {
+        let totalSeconds = max(0, appState.breakSecondsLeft)
+        return String(format: "%02d:%02d", totalSeconds / 60, totalSeconds % 60)
+    }
+
     var body: some View {
         ZStack {
             panelBackground
@@ -39,8 +46,8 @@ struct ReminderFloatingView: View {
 
     private var bannerContent: some View {
         HStack(alignment: .center, spacing: 12) {
-            StableText("\(appState.breakSecondsLeft)", size: 24, weight: .bold, alpha: 0.94, usesMonospacedDigit: true)
-                .frame(width: 46, height: 34)
+            StableText(countdownText, size: 24, weight: .bold, alpha: 0.94, usesMonospacedDigit: true)
+                .frame(width: 64, height: 34)
 
             VStack(alignment: .leading, spacing: 2) {
                 bannerTitleView
@@ -92,7 +99,7 @@ struct ReminderFloatingView: View {
             titleView
 
             StableText(
-                "\(appState.breakSecondsLeft)",
+                countdownText,
                 size: intensity.countdownFontSize,
                 weight: .bold,
                 alpha: 0.94,
