@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+- Refined reminder titles and messages with a softer, warmer tone while keeping the timer guidance clear.
+
 ## [0.3.1] - 2026-09-23
 
 ### Changed

@@ -241,7 +241,7 @@ struct ReminderFloatingView: View {
             return context == .lateNight ? context.restingMessage : appState.activeBreakKind == .pomodoroLong ? AppCopy.ReminderPopup.pomodoroLongRestingMessage : AppCopy.ReminderPopup.pomodoroRestingMessage
         case .completed:
             if appState.isReminderPreview {
-                return "预览不会改变当前节奏。"
+                return "这是一次轻轻的预览，不会打乱当前节奏。"
             }
             if context == .lateNight {
                 return context.lateNightCompletedMessage
@@ -253,7 +253,7 @@ struct ReminderFloatingView: View {
                 : AppCopy.ReminderPopup.completedMessage
         default:
             if appState.isReminderPreview {
-                return "这是 20 秒提示窗预览，可随时关闭。"
+                return "让我们先看一眼提醒的样子，随时都可以关掉。"
             }
             return context.restingMessage
         }

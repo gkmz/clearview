@@ -276,7 +276,10 @@ struct ClearViewTests {
         settings.startTimerOnLaunch = false
         AppSettingsStore(defaults: defaults).save(settings)
 
-        let appState = AppState()
+        let appState = AppState(
+            blueLightService: BlueLightFilterService(),
+            settingsStore: AppSettingsStore(defaults: defaults)
+        )
 
         #expect(appState.rhythmMode == .pomodoro)
         #expect(appState.reminderEnabled == false)

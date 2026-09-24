@@ -122,7 +122,7 @@ final class AppState: ObservableObject {
     private let reminderService = ReminderService()
     private let blueLightService: BlueLightFiltering
     private let shortcutManager = GlobalShortcutManager.shared
-    private let settingsStore = AppSettingsStore()
+    private let settingsStore: AppSettingsStore
     private let backgroundImageStore = BackgroundImageStore()
     private let preparationSeconds = 5
     private let previewSeconds = 20
@@ -140,8 +140,10 @@ final class AppState: ObservableObject {
         self.init(blueLightService: BlueLightFilterService())
     }
 
-    init(blueLightService: BlueLightFiltering) {
+    init(blueLightService: BlueLightFiltering, settingsStore: AppSettingsStore? = nil) {
         self.blueLightService = blueLightService
+        // 测试宿主与正式应用使用相同 Bundle ID；隔离测试 defaults，避免测试覆盖用户安装版配置。
+        self.settingsStore = settingsStore ?? AppSettingsStore(defaults: Self.defaultsForCurrentProcess())
         loadSettings()
         registerForDisplayNotifications()
 
@@ -219,6 +221,14 @@ final class AppState: ObservableObject {
         reminderPanel = ReminderPanelController(appState: self)
         settingsPanel = SettingsPanelController(appState: self)
         aboutPanel = AboutPanelController(appState: self)
+    }
+
+    /// 测试进程使用临时 defaults，正常启动仍使用应用的标准 UserDefaults。
+    private static func defaultsForCurrentProcess() -> UserDefaults {
+        if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
+            return UserDefaults()
+        }
+        return .standard
     }
 
     func showMainPanel() {
