@@ -89,6 +89,12 @@ final class SettingsPanel: NSPanel {
 }
 
 private struct SettingsPanelView: View {
+    private enum SettingsSection {
+        case rhythm
+        case appearance
+        case preference
+    }
+
     @EnvironmentObject private var appState: AppState
     @Environment(\.colorScheme) private var colorScheme
     @State private var recordingShortcutAction: ShortcutAction?
@@ -229,7 +235,7 @@ private struct SettingsPanelView: View {
 
     private var settingsSectionsContent: some View {
         VStack(alignment: .leading, spacing: 10) {
-            settingsSection(title: "节奏", isExpanded: $isRhythmSettingsExpanded) {
+            settingsSection(title: "节奏", isExpanded: sectionBinding(for: .rhythm)) {
                 rhythmModeRow()
 
                 if appState.rhythmMode == .eyeCare {
@@ -289,7 +295,7 @@ private struct SettingsPanelView: View {
                 }
             }
 
-            settingsSection(title: "外观", isExpanded: $isAppearanceSettingsExpanded) {
+            settingsSection(title: "外观", isExpanded: sectionBinding(for: .appearance)) {
                 HStack(spacing: 10) {
                     settingToggleCard(
                         title: "背景图片",
@@ -345,7 +351,7 @@ private struct SettingsPanelView: View {
                 )
             }
 
-            settingsSection(title: "偏好", isExpanded: $isPreferenceSettingsExpanded) {
+            settingsSection(title: "偏好", isExpanded: sectionBinding(for: .preference)) {
                 settingToggleCard(
                     title: "开机启动",
                     isOn: Binding(
@@ -379,6 +385,34 @@ private struct SettingsPanelView: View {
             GeometryReader { proxy in
                 Color.clear
                     .preference(key: SettingsPanelContentHeightKey.self, value: proxy.size.height)
+            }
+        )
+    }
+
+    /// 三个设置分组使用互斥展开状态，避免面板同时展开后高度过大。
+    private func sectionBinding(for section: SettingsSection) -> Binding<Bool> {
+        Binding(
+            get: {
+                switch section {
+                case .rhythm: return isRhythmSettingsExpanded
+                case .appearance: return isAppearanceSettingsExpanded
+                case .preference: return isPreferenceSettingsExpanded
+                }
+            },
+            set: { isExpanded in
+                guard isExpanded else {
+                    switch section {
+                    case .rhythm: isRhythmSettingsExpanded = false
+                    case .appearance: isAppearanceSettingsExpanded = false
+                    case .preference: isPreferenceSettingsExpanded = false
+                    }
+                    return
+                }
+
+                // 展开当前抽屉前先关闭其他抽屉，保持设置页高度稳定。
+                isRhythmSettingsExpanded = section == .rhythm
+                isAppearanceSettingsExpanded = section == .appearance
+                isPreferenceSettingsExpanded = section == .preference
             }
         )
     }

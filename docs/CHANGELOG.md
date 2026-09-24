@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - Refined reminder titles and messages with a softer, warmer tone while keeping the timer guidance clear.
+- Settings sections now use an accordion layout, so opening Rhythm, Appearance, or Preferences collapses the other sections.
+- The launch-front main window now returns to normal window layering when ClearView loses focus.
 
 ## [0.3.1] - 2026-09-23
 

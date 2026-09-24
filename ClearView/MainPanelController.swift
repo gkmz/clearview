@@ -5,6 +5,7 @@ import SwiftUI
 final class MainPanelController {
     private weak var appState: AppState?
     private var panel: NSPanel?
+    private var frontWindowObserver: NSObjectProtocol?
 
     var frame: NSRect? {
         panel?.frame
@@ -32,11 +33,35 @@ final class MainPanelController {
         panel?.orderFrontRegardless()
         panel?.makeKeyAndOrderFront(nil)
         panel?.makeKey()
-        guard !keepFront else { return }
+        if keepFront {
+            // 启动时先保证窗口可见；应用失去激活后立即恢复普通层级，允许其他窗口覆盖它。
+            frontWindowObserver.map(NotificationCenter.default.removeObserver)
+            frontWindowObserver = NotificationCenter.default.addObserver(
+                forName: NSApplication.didResignActiveNotification,
+                object: NSApplication.shared,
+                queue: .main
+            ) { [weak self] _ in
+                self?.releaseLaunchFrontLevel()
+            }
+            return
+        }
+        frontWindowObserver.map(NotificationCenter.default.removeObserver)
+        frontWindowObserver = nil
         DispatchQueue.main.async { [weak panel] in
             // 普通入口恢复标准层级，避免用户从菜单栏打开面板后长期遮挡其他应用。
             panel?.level = .normal
         }
+    }
+
+    deinit {
+        frontWindowObserver.map(NotificationCenter.default.removeObserver)
+    }
+
+    /// 应用切换到其他窗口后结束启动前置状态，恢复正常窗口层级。
+    private func releaseLaunchFrontLevel() {
+        panel?.level = .normal
+        frontWindowObserver.map(NotificationCenter.default.removeObserver)
+        frontWindowObserver = nil
     }
 
     func toggle() {
